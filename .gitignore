@@ -1,0 +1,79 @@
+# ============================
+# Arquivos binários do Go
+# ============================
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+*.test
+*.out
+
+# Diretórios de build e binários
+/bin/
+/build/
+/dist/
+/tmp/
+/out/
+
+# Cache do Go
+/go.sum
+*.log
+*.tmp
+*.cache
+
+# ============================
+# Arquivos de ambiente e config
+# ============================
+.env
+.env.*
+*.local
+*.envrc
+
+# ============================
+# IDEs e sistemas operacionais
+# ============================
+
+# VSCode
+.vscode/
+*.code-workspace
+
+# GoLand / IntelliJ
+.idea/
+
+# macOS
+.DS_Store
+
+# Windows
+Thumbs.db
+Desktop.ini
+
+# Linux
+*~
+
+# ============================
+# Docker
+# ============================
+/docker-compose.override.yml
+/.docker/
+/.dockerignore
+
+# ============================
+# Cobertura de testes
+# ============================
+coverage.out
+coverage.html
+
+# ============================
+# Arquivos temporários diversos
+# ============================
+*.swp
+*.bak
+*.tmp
+*.old
+*.orig
+
+# ============================
+# Vendor (se estiver usando Go Modules, não precisa subir)
+# ============================
+/vendor/
