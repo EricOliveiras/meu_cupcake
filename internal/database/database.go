@@ -29,7 +29,7 @@ func ConnectDB() {
 	fmt.Println("Conexão com o banco de dados estabelecida com sucesso.")
 
 	fmt.Println("Executando migrações do banco de dados...")
-	err = DB.AutoMigrate(&model.Usuario{})
+	err = DB.AutoMigrate(&model.Usuario{}, &model.Cupcake{})
 	if err != nil {
 		log.Fatal("Falha ao executar migrações:", err)
 	}
