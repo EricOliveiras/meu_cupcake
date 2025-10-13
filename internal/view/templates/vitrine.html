@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Nossa Vitrine - Meu Cupcake</title>
+    <style>
+      body {
+        font-family: sans-serif;
+        background-color: #fdf6f9;
+        color: #333;
+        margin: 0;
+      }
+      .container {
+        max-width: 1200px;
+        margin: 0 auto;
+        padding: 2rem;
+      }
+      header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        border-bottom: 2px solid #fde2ed;
+        padding-bottom: 1rem;
+      }
+      .logo a {
+        text-decoration: none;
+        color: #ff69b4;
+        font-size: 1.5rem;
+        font-weight: bold;
+      }
+      .nav-links a {
+        text-decoration: none;
+        margin-left: 1.5rem;
+        color: #333;
+        font-weight: bold;
+      }
+      .btn {
+        text-decoration: none;
+        padding: 8px 16px;
+        border-radius: 5px;
+        transition: background-color 0.3s, color 0.3s;
+        font-weight: bold;
+      }
+      .btn-primary {
+        background-color: #ff69b4;
+        color: white;
+      }
+      .btn-primary:hover {
+        background-color: #ff85c1;
+      }
+
+      h1 {
+        text-align: center;
+        color: #ff69b4;
+        margin: 2rem 0;
+      }
+      .vitrine-container {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 2rem;
+        justify-content: center;
+      }
+      .cupcake-card {
+        background-color: white;
+        border-radius: 8px;
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08);
+        width: 300px;
+        overflow: hidden;
+        display: flex;
+        flex-direction: column;
+      }
+      .cupcake-card img {
+        width: 100%;
+        height: 200px;
+        object-fit: cover;
+      }
+      .card-content {
+        padding: 1.5rem;
+        flex-grow: 1;
+        display: flex;
+        flex-direction: column;
+      }
+      .card-content h3 {
+        margin: 0 0 0.5rem 0;
+        color: #333;
+      }
+      .card-content p {
+        font-size: 0.9rem;
+        color: #666;
+        flex-grow: 1;
+      }
+      .card-footer {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 0 1.5rem 1.5rem 1.5rem;
+      }
+      .price {
+        font-size: 1.2rem;
+        font-weight: bold;
+        color: #ff69b4;
+      }
+      .add-to-cart-btn {
+        background-color: #ff69b4;
+        color: white;
+        border: none;
+        padding: 10px 20px;
+        border-radius: 5px;
+        cursor: pointer;
+        font-weight: bold;
+      }
+      .add-to-cart-btn:hover {
+        background-color: #ff85c1;
+      }
+      .empty-state {
+        text-align: center;
+        padding: 40px;
+        color: #777;
+        width: 100%;
+      }
+
+      @media (max-width: 768px) {
+        .vitrine-container {
+          gap: 1rem;
+        }
+        .cupcake-card {
+          width: 100%;
+          max-width: 350px;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <header>
+        <div class="logo"><a href="/">Meu Cupcake</a></div>
+        <nav class="nav-links">
+          {{ if .IsLoggedIn }}
+          <span>Olá, {{ .UserName }}!</span>
+          <a href="/logout">Sair</a>
+          {{ else }}
+          <a href="/login">Entrar</a>
+          <a href="/cadastro" class="btn btn-primary">Cadastrar</a>
+          {{ end }}
+        </nav>
+      </header>
+
+      <h1>Nossa Vitrine de Delícias</h1>
+
+      <div class="vitrine-container">
+        {{ range .Cupcakes }}
+        <div class="cupcake-card">
+          <img src="{{ .ImagemURL }}" alt="{{ .Nome }}" />
+          <div class="card-content">
+            <h3>{{ .Nome }}</h3>
+            <p>{{ .Descricao }}</p>
+          </div>
+          <div class="card-footer">
+            <span class="price">R$ {{ printf "%.2f" .Preco }}</span>
+            <button class="add-to-cart-btn">Adicionar ao Carrinho</button>
+          </div>
+        </div>
+        {{ else }}
+        <p class="empty-state">
+          Nenhum cupcake disponível no momento. Volte em breve!
+        </p>
+        {{ end }}
+      </div>
+    </div>
+  </body>
+</html>
