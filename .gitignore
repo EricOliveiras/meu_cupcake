@@ -77,3 +77,10 @@ coverage.html
 # Vendor (se estiver usando Go Modules, não precisa subir)
 # ============================
 /vendor/
+
+
+# ============================
+# Uploads e arquivos gerados
+# ============================
+/uploads/
+/generated/
