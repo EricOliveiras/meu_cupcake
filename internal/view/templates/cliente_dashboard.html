@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Minha Conta - Meu Cupcake</title>
+    <link rel="stylesheet" href="/static/css/style.css" />
+
+    <style>
+      .dashboard-content {
+        background-color: white;
+        padding: 2rem;
+        border-radius: 8px;
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+      }
+      .dashboard-links a {
+        display: block;
+        margin-bottom: 1rem;
+        font-size: 1.2rem;
+        color: #333;
+        text-decoration: none;
+        padding: 10px;
+        border-radius: 5px;
+        transition: background-color 0.2s;
+      }
+      .dashboard-links a:hover {
+        background-color: #f0f0f0;
+        color: #ff69b4;
+      }
+    </style>
+  </head>
+  <body>
+    {{ template "_header.html" . }}
+
+    <div class="container">
+      <h1>Minha Conta</h1>
+      <div class="dashboard-content">
+        <p>Olá! Bem-vindo(a) de volta!</p>
+
+        <div class="dashboard-links">
+          <a href="/vitrine">Ver a Vitrine</a>
+          <a href="#">Meus Pedidos</a>
+        </div>
+      </div>
+    </div>
+  </body>
+</html>

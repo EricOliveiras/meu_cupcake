@@ -1,0 +1,27 @@
+{{ define "_header.html" }}
+<header class="main-header">
+  {{/* Lógica principal: verifica se o usuário está logado ou não */}} {{ if
+  .IsLoggedIn }} {{/* Lógica do Logo: link dinâmico baseado no tipo do usuário
+  */}} {{ if eq .User.Tipo "cliente" }}
+  <div class="logo"><a href="/cliente/dashboard">Meu Cupcake</a></div>
+  {{ else if eq .User.Tipo "lojista" }}
+  <div class="logo"><a href="/lojista/dashboard">Meu Cupcake</a></div>
+  {{ else }}
+  <div class="logo"><a href="/">Meu Cupcake</a></div>
+  {{ end }}
+
+  <nav class="nav-links">
+    <a href="/perfil" class="btn btn-secondary">Meu Perfil</a>
+    <a href="/logout" class="btn btn-primary">Sair</a>
+  </nav>
+
+  {{ else }}
+  <div class="logo"><a href="/">Meu Cupcake</a></div>
+
+  <nav class="nav-links">
+    <a href="/login" class="btn btn-secondary">Entrar</a>
+    <a href="/cadastro" class="btn btn-primary">Cadastrar</a>
+  </nav>
+  {{ end }}
+</header>
+{{ end }}

@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Meu Perfil - Meu Cupcake</title>
+    <style>
+      body {
+        font-family: sans-serif;
+        background-color: #f9f9f9;
+        color: #333;
+        margin: 0;
+        padding: 2rem;
+      }
+      .container {
+        max-width: 800px;
+        margin: 0 auto;
+        background-color: white;
+        padding: 2rem;
+        border-radius: 8px;
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+      }
+      h1 {
+        color: #ff69b4;
+        border-bottom: 2px solid #f0f0f0;
+        padding-bottom: 1rem;
+      }
+      .profile-info p {
+        font-size: 1.1rem;
+        line-height: 1.6;
+      }
+      .profile-info strong {
+        color: #555;
+      }
+      .actions {
+        margin-top: 2rem;
+      }
+      .btn {
+        text-decoration: none;
+        padding: 10px 20px;
+        border-radius: 5px;
+        font-weight: bold;
+      }
+      .btn-secondary {
+        background-color: #6c757d;
+        color: white;
+      }
+      .btn-secondary:hover {
+        background-color: #5a6268;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <h1>Meu Perfil</h1>
+      <div class="profile-info">
+        <p><strong>Nome:</strong> {{ .User.Nome }}</p>
+        <p><strong>Email:</strong> {{ .User.Email }}</p>
+      </div>
+      <div class="actions">
+        <a href="/cliente/dashboard" class="btn btn-secondary"
+          >Voltar ao Painel</a
+        >
+      </div>
+    </div>
+  </body>
+</html>

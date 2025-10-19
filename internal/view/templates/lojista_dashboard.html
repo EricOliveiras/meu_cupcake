@@ -3,13 +3,41 @@
   <head>
     <meta charset="UTF-8" />
     <title>Dashboard do Lojista</title>
+    <link rel="stylesheet" href="/static/css/style.css" />
+
+    <style>
+      .dashboard-content {
+        background-color: white;
+        padding: 2rem;
+        border-radius: 8px;
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        text-align: center;
+      }
+      .dashboard-actions {
+        display: flex;
+        gap: 1.5rem;
+        justify-content: center;
+        flex-wrap: wrap;
+        margin-top: 2rem;
+      }
+    </style>
   </head>
   <body>
-    <nav>
-      <a href="/logout">Sair</a>
-    </nav>
-    <h1>Painel do Lojista</h1>
-    <p>Bem-vindo, Lojista!</p>
-    <a href="/lojista/cupcakes">Gerenciar Cupcakes</a>
+    {{ template "_header.html" . }}
+
+    <div class="container">
+      <h1>Painel do Lojista</h1>
+      <div class="dashboard-content">
+        <p>Bem-vindo, Lojista! Selecione uma das ações abaixo para começar.</p>
+
+        <div class="dashboard-actions">
+          <a href="/vitrine" class="btn btn-primary">Ver Vitrine</a>
+          <a href="/lojista/cupcakes" class="btn btn-secondary"
+            >Gerenciar Cupcakes</a
+          >
+          <a href="/lojista/pedidos" class="btn btn-secondary">Ver Pedidos</a>
+        </div>
+      </div>
+    </div>
   </body>
 </html>
