@@ -3,66 +3,86 @@ package handler
 import (
 	"fmt"
 	"net/http"
+	"os"
 	"path/filepath"
 	"strconv"
-
-	"github.com/google/uuid"
 
 	"github.com/ericoliveiras/meu-cupcake/internal/database"
 	"github.com/ericoliveiras/meu-cupcake/internal/model"
 	"github.com/gin-gonic/gin"
+	"github.com/google/uuid"
+	"github.com/gorilla/sessions" // Importe o pacote de sessões
 )
 
-func ShowLojistaDashboard(c *gin.Context) {
-	c.HTML(http.StatusOK, "lojista_dashboard.html", nil)
+// LojistaHandler agrupa os handlers do lojista e suas dependências.
+type LojistaHandler struct {
+	Store *sessions.CookieStore
 }
 
-func ShowCupcakesPage(c *gin.Context) {
+// getSessionData é uma função helper para buscar os dados do usuário da sessão.
+func (h *LojistaHandler) getSessionData(c *gin.Context) (model.Usuario, bool) {
+	session, _ := h.Store.Get(c.Request, "meu-cupcake-session")
+	userID, ok := session.Values["userID"].(uint)
+	if !ok {
+		return model.Usuario{}, false
+	}
+
+	var user model.Usuario
+	if err := database.DB.First(&user, userID).Error; err != nil {
+		return model.Usuario{}, false
+	}
+	return user, true
+}
+
+// ShowLojistaDashboard renderiza o painel principal do lojista.
+func (h *LojistaHandler) ShowLojistaDashboard(c *gin.Context) {
+	user, isLoggedIn := h.getSessionData(c)
+
+	c.HTML(http.StatusOK, "lojista_dashboard.html", gin.H{
+		"IsLoggedIn": isLoggedIn,
+		"User":       user,
+	})
+}
+
+// ShowCupcakesPage busca todos os cupcakes e renderiza a página de gerenciamento.
+func (h *LojistaHandler) ShowCupcakesPage(c *gin.Context) {
+	user, isLoggedIn := h.getSessionData(c)
 	var cupcakes []model.Cupcake
-	// Busca todos os cupcakes no banco, ordenados do mais recente para o mais antigo
+
 	if err := database.DB.Order("created_at desc").Find(&cupcakes).Error; err != nil {
-		// Em um caso real, seria bom logar o erro
 		c.String(http.StatusInternalServerError, "Erro ao buscar cupcakes.")
 		return
 	}
 
-	// Renderiza a view passando a lista de cupcakes
 	c.HTML(http.StatusOK, "lojista_cupcakes.html", gin.H{
-		"Cupcakes": cupcakes,
+		"IsLoggedIn": isLoggedIn,
+		"User":       user,
+		"Cupcakes":   cupcakes,
 	})
 }
 
-// ShowNewCupcakeForm apenas renderiza a página com o formulário de cadastro.
-func ShowNewCupcakeForm(c *gin.Context) {
-	c.HTML(http.StatusOK, "lojista_cupcake_form.html", nil)
-}
-
-func ProcessNewCupcakeForm(c *gin.Context) {
-	// 1. Parse dos campos do formulário
+// ProcessNewCupcakeForm processa o formulário de criação de cupcake.
+func (h *LojistaHandler) ProcessNewCupcakeForm(c *gin.Context) {
 	nome := c.PostForm("nome")
 	descricao := c.PostForm("descricao")
 	precoStr := c.PostForm("preco")
-	disponivelStr := c.PostForm("disponivel") // Retorna "true" se marcado, "" se não
+	disponivelStr := c.PostForm("disponivel")
 
-	// 2. Processamento do Upload da Imagem
 	file, err := c.FormFile("imagem")
 	if err != nil {
 		c.String(http.StatusBadRequest, fmt.Sprintf("Erro ao obter arquivo: %s", err.Error()))
 		return
 	}
 
-	// Gere um nome de arquivo único para evitar conflitos
 	extensao := filepath.Ext(file.Filename)
 	novoNomeArquivo := uuid.New().String() + extensao
 	caminhoDestino := filepath.Join("uploads", novoNomeArquivo)
 
-	// Salve o arquivo no destino
 	if err := c.SaveUploadedFile(file, caminhoDestino); err != nil {
 		c.String(http.StatusInternalServerError, fmt.Sprintf("Erro ao salvar arquivo: %s", err.Error()))
 		return
 	}
 
-	// 3. Conversão e Validação dos Dados
 	preco, err := strconv.ParseFloat(precoStr, 64)
 	if err != nil {
 		c.String(http.StatusBadRequest, "O preço fornecido é inválido.")
@@ -70,21 +90,98 @@ func ProcessNewCupcakeForm(c *gin.Context) {
 	}
 	disponivel := disponivelStr == "true"
 
-	// 4. Criação do Objeto Cupcake
 	novoCupcake := model.Cupcake{
-		Nome:      nome,
-		Descricao: descricao,
-		Preco:     preco,
+		Nome:       nome,
+		Descricao:  descricao,
+		Preco:      preco,
 		Disponivel: disponivel,
 		ImagemURL:  fmt.Sprintf("/uploads/%s", novoNomeArquivo),
 	}
 
-	// 5. Salvar no Banco de Dados
 	if err := database.DB.Create(&novoCupcake).Error; err != nil {
 		c.String(http.StatusInternalServerError, "Erro ao salvar cupcake no banco de dados.")
 		return
 	}
 
-	// 6. Redirecionar para a página de listagem em caso de sucesso
+	c.Redirect(http.StatusFound, "/lojista/cupcakes")
+}
+
+func (h *LojistaHandler) DeleteCupcake(c *gin.Context) {
+    idStr := c.Param("id")
+    id, err := strconv.ParseUint(idStr, 10, 32)
+    if err != nil {
+        c.String(http.StatusBadRequest, "ID inválido.")
+        return
+    }
+
+    // 1. Antes de deletar, buscar o registro do cupcake para pegar o caminho da imagem.
+    var cupcake model.Cupcake
+    if err := database.DB.First(&cupcake, id).Error; err != nil {
+        c.String(http.StatusNotFound, "Cupcake não encontrado.")
+        return
+    }
+
+    // 2. Construir o caminho do arquivo no sistema de arquivos.
+    // (Removemos a barra inicial se ela existir para criar um caminho local)
+    filePath := cupcake.ImagemURL
+    if len(filePath) > 0 && filePath[0] == '/' {
+        filePath = filePath[1:]
+    }
+
+    // 3. Tentar remover o arquivo de imagem do disco.
+    if err := os.Remove(filePath); err != nil {
+        // Se o arquivo não existir, não é um erro crítico.
+        // Logamos o erro no console, mas continuamos o processo.
+        fmt.Printf("Aviso: não foi possível remover o arquivo %s: %v\n", filePath, err)
+    }
+
+    // 4. Executa a exclusão do registro no banco (soft delete).
+    if err := database.DB.Delete(&model.Cupcake{}, id).Error; err != nil {
+        c.String(http.StatusInternalServerError, "Erro ao excluir o cupcake do banco de dados.")
+        return
+    }
+
+    c.Redirect(http.StatusFound, "/lojista/cupcakes")
+}
+
+// ProcessEditCupcakeForm processa os dados do formulário de edição.
+func (h *LojistaHandler) ProcessEditCupcakeForm(c *gin.Context) {
+	idStr := c.Param("id")
+	id, err := strconv.ParseUint(idStr, 10, 32)
+	if err != nil {
+		c.String(http.StatusBadRequest, "ID inválido.")
+		return
+	}
+
+	var cupcake model.Cupcake
+	if err := database.DB.First(&cupcake, id).Error; err != nil {
+		c.String(http.StatusNotFound, "Cupcake não encontrado.")
+		return
+	}
+
+	// Atualiza os campos com os novos valores do formulário
+	cupcake.Nome = c.PostForm("nome")
+	cupcake.Descricao = c.PostForm("descricao")
+	preco, _ := strconv.ParseFloat(c.PostForm("preco"), 64)
+	cupcake.Preco = preco
+	cupcake.Disponivel = c.PostForm("disponivel") == "true"
+
+	// Processa a imagem SOMENTE se uma nova foi enviada
+	file, err := c.FormFile("imagem")
+	if err == nil { // Se err for nil, significa que um novo arquivo foi enviado
+		extensao := filepath.Ext(file.Filename)
+		novoNomeArquivo := uuid.New().String() + extensao
+		caminhoDestino := filepath.Join("uploads", novoNomeArquivo)
+		if err := c.SaveUploadedFile(file, caminhoDestino); err == nil {
+			cupcake.ImagemURL = fmt.Sprintf("/uploads/%s", novoNomeArquivo)
+		}
+	}
+
+	// Salva as alterações no banco de dados
+	if err := database.DB.Save(&cupcake).Error; err != nil {
+		c.String(http.StatusInternalServerError, "Erro ao atualizar o cupcake.")
+		return
+	}
+
 	c.Redirect(http.StatusFound, "/lojista/cupcakes")
 }
