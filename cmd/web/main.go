@@ -26,6 +26,7 @@ func main() {
 
 	authHandler := &handler.AuthHandler{Store: store}
 	homeHandler := &handler.HomeHandler{Store: store}
+	lojistaHandler := &handler.LojistaHandler{Store: store}
 
 	database.ConnectDB()
 	database.SeedLojista()
@@ -34,6 +35,7 @@ func main() {
 	router.LoadHTMLGlob("internal/view/templates/*")
 
 	router.Static("/uploads", "./uploads")
+	router.Static("/static", "./static")
 
 	router.GET("/", homeHandler.ShowHomePage)
 	router.GET("/vitrine", homeHandler.ShowVitrinePage)
@@ -50,14 +52,21 @@ func main() {
 		protected.GET("/perfil", homeHandler.ShowProfilePage)
 	}
 
+	clienteRoutes := router.Group("/cliente")
+	clienteRoutes.Use(authHandler.AuthRequired()) // Garante que só usuários logados acessem
+	{
+		clienteRoutes.GET("/dashboard", homeHandler.ShowClienteDashboard)
+	}
+
 	lojistaRoutes := router.Group("/lojista")
 	lojistaRoutes.Use(authHandler.AuthRequired())
 	lojistaRoutes.Use(authHandler.RoleRequired(model.RoleLojista))
 	{
-		lojistaRoutes.GET("/dashboard", handler.ShowLojistaDashboard)
-		lojistaRoutes.GET("/cupcakes", handler.ShowCupcakesPage)     
-		lojistaRoutes.GET("/cupcakes/novo", handler.ShowNewCupcakeForm)
-		lojistaRoutes.POST("/cupcakes/novo", handler.ProcessNewCupcakeForm) 
+		lojistaRoutes.GET("/dashboard", lojistaHandler.ShowLojistaDashboard)
+		lojistaRoutes.GET("/cupcakes", lojistaHandler.ShowCupcakesPage)
+		lojistaRoutes.POST("/cupcakes/novo", lojistaHandler.ProcessNewCupcakeForm)
+    lojistaRoutes.POST("/cupcakes/editar/:id", lojistaHandler.ProcessEditCupcakeForm)
+    lojistaRoutes.GET("/cupcakes/excluir/:id", lojistaHandler.DeleteCupcake)
 	}
 
 	port := os.Getenv("PORT")
