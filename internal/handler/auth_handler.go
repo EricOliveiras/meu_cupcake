@@ -8,7 +8,6 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/gorilla/sessions"
 	"golang.org/x/crypto/bcrypt"
-	"gorm.io/gorm"
 )
 
 type AuthHandler struct {
@@ -48,7 +47,7 @@ func ProcessCadastroForm(c *gin.Context) {
 		return
 	}
 
-	c.Redirect(http.StatusFound, "/")
+	c.Redirect(http.StatusFound, "/login")
 }
 
 func (h *AuthHandler) ShowLoginPage(c *gin.Context) {
@@ -62,11 +61,7 @@ func (h *AuthHandler) ProcessLoginForm(c *gin.Context) {
 	var usuario model.Usuario
 	result := database.DB.Where("email = ?", email).First(&usuario)
 	if result.Error != nil {
-		if result.Error == gorm.ErrRecordNotFound {
-			c.String(http.StatusUnauthorized, "E-mail ou senha inválidos.")
-			return
-		}
-		c.String(http.StatusInternalServerError, "Ocorreu um erro interno.")
+		c.String(http.StatusUnauthorized, "E-mail ou senha inválidos.")
 		return
 	}
 
@@ -77,17 +72,22 @@ func (h *AuthHandler) ProcessLoginForm(c *gin.Context) {
 	}
 
 	session, _ := h.Store.Get(c.Request, "meu-cupcake-session")
-
 	session.Values["userID"] = usuario.ID
 	session.Values["userName"] = usuario.Nome
-
 	err = session.Save(c.Request, c.Writer)
 	if err != nil {
 		c.String(http.StatusInternalServerError, "Erro ao salvar a sessão.")
 		return
 	}
 
-	c.Redirect(http.StatusFound, "/")
+	switch usuario.Tipo {
+	case model.RoleLojista:
+		c.Redirect(http.StatusFound, "/lojista/dashboard")
+	case model.RoleCliente:
+		c.Redirect(http.StatusFound, "/cliente/dashboard")
+	default:
+		c.Redirect(http.StatusFound, "/")
+	}
 }
 
 func (h *AuthHandler) Logout(c *gin.Context) {
@@ -106,13 +106,25 @@ func (h *AuthHandler) Logout(c *gin.Context) {
 func (h *AuthHandler) AuthRequired() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		session, _ := h.Store.Get(c.Request, "meu-cupcake-session")
-		userID := session.Values["userID"]
-
-		if userID == nil {
-			c.Abort()
+		userID, ok := session.Values["userID"].(uint)
+		if !ok {
 			c.Redirect(http.StatusFound, "/login")
+			c.Abort()
 			return
 		}
+
+		// --- CORREÇÃO PRINCIPAL AQUI ---
+		// Buscamos o usuário completo no banco de dados.
+		var user model.Usuario
+		if err := database.DB.First(&user, userID).Error; err != nil {
+			// Se o usuário não existe mais no banco, força o logout.
+			c.Redirect(http.StatusFound, "/logout")
+			c.Abort()
+			return
+		}
+
+		// Colocamos o objeto User inteiro no contexto.
+		c.Set("user", user)
 
 		c.Next()
 	}
