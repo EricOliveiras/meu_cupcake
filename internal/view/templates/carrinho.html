@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Meu Carrinho - Meu Cupcake</title>
+    <link rel="stylesheet" href="/static/css/style.css" />
+    <style>
+      .container {
+        max-width: 900px;
+        margin: 2rem auto;
+      }
+      .cart-table {
+        width: 100%;
+        border-collapse: collapse;
+        background-color: white;
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        border-radius: 8px;
+        overflow: hidden;
+        margin-bottom: 2rem;
+      }
+      .cart-table th,
+      .cart-table td {
+        padding: 15px;
+        border-bottom: 1px solid #ddd;
+        text-align: left;
+        vertical-align: middle;
+      }
+      .cart-table thead th {
+        background-color: #f7f7f7;
+        font-weight: bold;
+      }
+      .cart-item-img {
+        width: 80px;
+        height: 80px;
+        object-fit: cover;
+        border-radius: 5px;
+        margin-right: 15px;
+      }
+      .item-details {
+        display: flex;
+        align-items: center;
+      }
+      .item-name {
+        font-weight: bold;
+      }
+      .quantity-controls {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+      }
+      .quantity-btn {
+        background-color: #eee;
+        border: 1px solid #ccc;
+        color: #333;
+        width: 30px;
+        height: 30px;
+        border-radius: 4px;
+        cursor: pointer;
+        font-size: 1.2rem;
+        line-height: 1;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+      .quantity-btn:hover {
+        background-color: #ddd;
+      }
+      .quantity-display {
+        font-weight: bold;
+        min-width: 20px;
+        text-align: center;
+      }
+      .remove-cell {
+        text-align: center;
+      }
+      .remove-form button {
+        background: none;
+        border: none;
+        color: #dc3545;
+        cursor: pointer;
+        font-size: 1.5rem;
+        padding: 0;
+        line-height: 1;
+      }
+      .remove-form button:hover {
+        color: #a71d2a;
+      }
+      .cart-summary {
+        background-color: white;
+        padding: 2rem;
+        border-radius: 8px;
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+      }
+      .summary-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 1.5rem;
+      }
+      .total {
+        font-size: 1.5rem;
+        font-weight: bold;
+      }
+      .total span {
+        color: #ff69b4;
+      }
+      .clear-cart-form button {
+        background-color: #dc3545;
+        color: white;
+      }
+      .clear-cart-form button:hover {
+        background-color: #a71d2a;
+      }
+      .empty-cart {
+        text-align: center;
+        padding: 40px;
+        background-color: white;
+        border-radius: 8px;
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+      }
+      .empty-cart p {
+        color: #777;
+        font-size: 1.2rem;
+      }
+
+      /* --- ESTILOS PARA FLASH MESSAGES --- */
+      .flash-messages {
+        padding: 0;
+        margin-bottom: 1.5rem;
+      }
+      .flash {
+        padding: 1rem;
+        margin-bottom: 1rem;
+        border-radius: 5px;
+        border: 1px solid transparent;
+        text-align: center;
+        font-weight: bold;
+      }
+      .flash-success {
+        color: #155724;
+        background-color: #d4edda;
+        border-color: #c3e6cb;
+      }
+      .flash-error {
+        color: #721c24;
+        background-color: #f8d7da;
+        border-color: #f5c6cb;
+      }
+    </style>
+  </head>
+  <body>
+    {{ template "_header.html" . }}
+
+    <div class="container">
+      {{ if .FlashesSuccess }}
+      <div class="flash-messages">
+        {{ range .FlashesSuccess }}
+        <div class="flash flash-success">{{ . }}</div>
+        {{ end }}
+      </div>
+      {{ end }} {{ if .FlashesError }}
+      <div class="flash-messages">
+        {{ range .FlashesError }}
+        <div class="flash flash-error">{{ . }}</div>
+        {{ end }}
+      </div>
+      {{ end }}
+      <h1>Meu Carrinho</h1>
+
+      {{ if .Items }}
+      <table class="cart-table">
+        <thead>
+          <tr>
+            <th colspan="2">Produto</th>
+            <th>Preço Unitário</th>
+            <th>Quantidade</th>
+            <th>Subtotal</th>
+            <th>Remover</th>
+          </tr>
+        </thead>
+        <tbody>
+          {{ range .Items }}
+          <tr>
+            <td>
+              <img
+                src="{{ .Cupcake.ImagemURL }}"
+                alt="{{ .Cupcake.Nome }}"
+                class="cart-item-img"
+              />
+            </td>
+            <td><span class="item-name">{{ .Cupcake.Nome }}</span></td>
+            <td>R$ {{ printf "%.2f" .Cupcake.Preco }}</td>
+            <td>
+              <div class="quantity-controls">
+                <form
+                  action="/carrinho/diminuir/{{ .Cupcake.ID }}"
+                  method="POST"
+                  style="margin: 0"
+                >
+                  <input type="hidden" name="return_to" value="cart" />
+                  <button type="submit" class="quantity-btn">-</button>
+                </form>
+                <span class="quantity-display">{{ .Quantity }}</span>
+                <form
+                  action="/carrinho/adicionar/{{ .Cupcake.ID }}"
+                  method="POST"
+                  style="margin: 0"
+                >
+                  <input type="hidden" name="return_to" value="cart" />
+                  <button type="submit" class="quantity-btn">+</button>
+                </form>
+              </div>
+            </td>
+            <td>R$ {{ printf "%.2f" .Subtotal }}</td>
+            <td class="remove-cell">
+              <form
+                action="/carrinho/remover/{{ .Cupcake.ID }}"
+                method="POST"
+                class="remove-form"
+              >
+                <button type="submit">&times;</button>
+              </form>
+            </td>
+          </tr>
+          {{ end }}
+        </tbody>
+      </table>
+
+      <div class="cart-summary">
+        <div class="summary-header">
+          <div class="total">
+            Total: <span>R$ {{ printf "%.2f" .Total }}</span>
+          </div>
+          <form action="/carrinho/limpar" method="POST" class="clear-cart-form">
+            <button type="submit" class="btn btn-secondary">
+              Limpar Carrinho
+            </button>
+          </form>
+        </div>
+        <a
+          href="/cliente/checkout"
+          class="btn btn-primary"
+          style="width: 100%; text-align: center"
+        >
+          Finalizar Compra
+        </a>
+      </div>
+
+      {{ else }}
+      <div class="empty-cart">
+        <p>Seu carrinho está vazio.</p>
+        <a href="/vitrine" class="btn btn-primary">Ver Produtos</a>
+      </div>
+      {{ end }}
+    </div>
+  </body>
+</html>
