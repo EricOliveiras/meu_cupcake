@@ -9,77 +9,36 @@
     <style>
         /* --- ESTILOS DA VITRINE --- */
         .vitrine-container {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 2rem;
-            justify-content: center;
+            display: flex; flex-wrap: wrap; gap: 2rem; justify-content: center;
         }
-
         .cupcake-card {
-            background-color: white;
-            border-radius: 8px;
-            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08);
-            width: 300px;
-            overflow: hidden;
-            display: flex;
-            flex-direction: column;
-            cursor: pointer;
-            transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+            background-color: white; border-radius: 8px; box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08);
+            width: 300px; overflow: hidden; display: flex; flex-direction: column;
+            cursor: pointer; transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
         }
-
         .cupcake-card:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.12);
+            transform: translateY(-5px); box-shadow: 0 8px 20px rgba(0, 0, 0, 0.12);
         }
-
-        .cupcake-card img {
-            width: 100%;
-            height: 200px;
-            object-fit: cover;
-        }
-
-        .card-content {
-            padding: 1.5rem;
-            flex-grow: 1;
-            display: flex;
-            flex-direction: column;
-            text-align: left;
-        }
-
+        .cupcake-card img { width: 100%; height: 200px; object-fit: cover; }
+        .card-content { padding: 1.5rem; flex-grow: 1; display: flex; flex-direction: column; text-align: left; }
         .card-content h3 { margin: 0 0 0.5rem 0; color: #333; }
-
         .card-content p {
-            font-size: 0.9rem;
-            color: #666;
-            flex-grow: 1;
-            margin: 0;
-            overflow: hidden;
-            text-overflow: ellipsis;
-            display: -webkit-box;
-            -webkit-line-clamp: 3;
-            -webkit-box-orient: vertical;
+            font-size: 0.9rem; color: #666; flex-grow: 1; margin: 0;
+            overflow: hidden; text-overflow: ellipsis; display: -webkit-box;
+            -webkit-line-clamp: 3; -webkit-box-orient: vertical;
         }
-
         .card-footer {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 1.5rem;
-            padding-top: 1rem;
+            display: flex; justify-content: space-between; align-items: center;
+            padding: 1.5rem; padding-top: 1rem;
         }
-
         .price { font-size: 1.2rem; font-weight: bold; color: #ff69b4; }
-        
-        .add-to-cart-btn {
-            background-color: #ff69b4;
-            color: white;
-            border: none;
-            padding: 10px 20px;
-            border-radius: 5px;
-            cursor: pointer;
-            font-weight: bold;
+
+        /* --- ESTILO PARA O BOTÃO/FORM --- */
+        .add-to-cart-form button { /* Estiliza o botão dentro do formulário */
+            background-color: #ff69b4; color: white; border: none;
+            padding: 10px 20px; border-radius: 5px; cursor: pointer; font-weight: bold;
         }
-        .add-to-cart-btn:hover { background-color: #ff85c1; }
+        .add-to-cart-form button:hover { background-color: #ff85c1; }
 
         /* --- ESTILOS DO MODAL --- */
         .modal-overlay {
@@ -87,13 +46,11 @@
             background-color: rgba(0, 0, 0, 0.7);
             display: none; justify-content: center; align-items: center; z-index: 1000;
         }
-
         .modal-content {
             background-color: white; border-radius: 8px; padding: 2rem;
             width: 90%; max-width: 600px; position: relative;
             display: flex; gap: 1.5rem;
         }
-
         .modal-img { width: 250px; height: 250px; object-fit: cover; border-radius: 8px; }
         .modal-info h2 { margin-top: 0; color: #ff69b4; }
         .modal-info p { color: #555; line-height: 1.6; }
@@ -103,28 +60,50 @@
             border: none; background: none;
         }
         .close-btn:hover { color: #333; }
-
-        /* --- CORREÇÃO AQUI --- */
-        /* Adiciona margem à direita do preço SOMENTE dentro do modal */
         .modal-info .price {
-            font-size: 1.5rem;
-            margin-right: 1rem; /* Adiciona um espaço de 16px */
+            font-size: 1.5rem; margin-right: 1rem;
         }
+
+        .flash-messages {
+        padding: 0; /* Remove padding se não houver container */
+        margin-bottom: 1.5rem;
+    }
+    .flash {
+        padding: 1rem;
+        margin-bottom: 1rem;
+        border-radius: 5px;
+        border: 1px solid transparent;
+        text-align: center;
+        font-weight: bold;
+    }
+    .flash-success {
+        color: #155724;
+        background-color: #d4edda;
+        border-color: #c3e6cb;
+    }
     </style>
 </head>
 <body>
     {{ template "_header.html" . }}
 
     <div class="container">
-        <h1>Nossa Vitrine de Delícias</h1>
+         {{ if .Flashes }}
+         <div class="flash-messages">
+             {{ range .Flashes }}
+             <div class="flash flash-success">{{ . }}</div>
+             {{ end }}
+         </div>
+         {{ end }}
+         <h1>Nossa Vitrine de Delícias</h1>
         <div class="vitrine-container">
             {{ range .Cupcakes }}
-            <div class="cupcake-card" 
-                 data-name="{{ .Nome }}" 
-                 data-description="{{ .Descricao }}" 
-                 data-price="{{ printf "%.2f" .Preco }}" 
+             <div class="cupcake-card"
+                 data-id="{{ .ID }}" 
+                 data-name="{{ .Nome }}"
+                 data-description="{{ .Descricao }}"
+                 data-price="{{ printf "%.2f" .Preco }}"
                  data-image="{{ .ImagemURL }}">
-                
+
                 <img src="{{ .ImagemURL }}" alt="{{ .Nome }}">
                 <div class="card-content">
                     <h3>{{ .Nome }}</h3>
@@ -132,7 +111,9 @@
                 </div>
                 <div class="card-footer">
                     <span class="price">R$ {{ printf "%.2f" .Preco }}</span>
-                    <button class="add-to-cart-btn">Adicionar ao Carrinho</button>
+                    <form action="/carrinho/adicionar/{{ .ID }}" method="POST" class="add-to-cart-form">
+                        <button type="submit">Adicionar ao Carrinho</button>
+                    </form>
                 </div>
             </div>
             {{ else }}
@@ -150,7 +131,9 @@
                 <p id="modalDescription"></p>
                 <div class="card-footer">
                     <span class="price" id="modalPrice"></span>
-                    <button class="add-to-cart-btn">Adicionar ao Carrinho</button>
+                    <form action="#" method="POST" class="add-to-cart-form">
+                        <button type="submit">Adicionar ao Carrinho</button>
+                    </form>
                 </div>
             </div>
         </div>
@@ -161,39 +144,40 @@
             const modalOverlay = document.getElementById('cupcakeModal');
             const closeModalBtn = document.getElementById('closeModalBtn');
             const clickableCards = document.querySelectorAll('.cupcake-card');
-
-            // Elementos do modal para preencher
             const modalImage = document.getElementById('modalImage');
             const modalName = document.getElementById('modalName');
             const modalDescription = document.getElementById('modalDescription');
             const modalPrice = document.getElementById('modalPrice');
+            const modalCartForm = modalOverlay.querySelector('.add-to-cart-form'); // Seleciona o form DENTRO do modal
 
-            const closeModal = () => {
-                modalOverlay.style.display = 'none';
-            };
+            const closeModal = () => { modalOverlay.style.display = 'none'; };
 
             clickableCards.forEach(card => {
                 card.addEventListener('click', (event) => {
-                    if (event.target.closest('.add-to-cart-btn')) {
-                        console.log(`Adicionar "${card.dataset.name}" ao carrinho.`);
-                        return;
+                    if (event.target.closest('.add-to-cart-form')) { return; } // Não abre modal se clicar no form de add
+
+                    // Pega o ID do atributo data-id do card clicado
+                    const cupcakeId = card.dataset.id; 
+                    if (!cupcakeId) {
+                        console.error("Erro: Atributo data-id não encontrado no card.");
+                        return; // Impede abrir o modal se não achar o ID
                     }
-                    
+
+                    // Preenche o modal
                     modalImage.src = card.dataset.image;
                     modalName.textContent = card.dataset.name;
                     modalDescription.textContent = card.dataset.description;
                     modalPrice.textContent = `R$ ${card.dataset.price}`;
                     
-                    modalOverlay.style.display = 'flex';
+                    // ATUALIZA o action do form DENTRO do modal com o ID correto
+                    modalCartForm.action = `/carrinho/adicionar/${cupcakeId}`;
+
+                    modalOverlay.style.display = 'flex'; // Mostra o modal
                 });
             });
 
             closeModalBtn.addEventListener('click', closeModal);
-            modalOverlay.addEventListener('click', (event) => {
-                if (event.target === modalOverlay) {
-                    closeModal();
-                }
-            });
+            modalOverlay.addEventListener('click', (event) => { if (event.target === modalOverlay) closeModal(); });
         });
     </script>
 </body>
