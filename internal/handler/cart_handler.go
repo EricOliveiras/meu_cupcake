@@ -1,0 +1,507 @@
+package handler
+
+import (
+	"context"
+	"errors"
+	"fmt"
+	"net/http"
+	"os"
+	"sort"
+	"strconv"
+	"time"
+
+	"github.com/ericoliveiras/meu-cupcake/internal/database"
+	"github.com/ericoliveiras/meu-cupcake/internal/model"
+	"github.com/gin-gonic/gin"
+	"github.com/gorilla/sessions"
+	"github.com/mercadopago/sdk-go/pkg/config"
+	"github.com/mercadopago/sdk-go/pkg/payment"
+	"gorm.io/gorm"
+)
+
+type PaymentRequestData struct {
+	Token             string  `json:"token"`
+	IssuerID          string  `json:"issuer_id"`
+	PaymentMethodID   string  `json:"payment_method_id"`
+	TransactionAmount float64 `json:"transaction_amount"`
+	Installments      int     `json:"installments"`
+	Description       string  `json:"description"`
+	Payer             struct {
+		Email          string `json:"email"`
+		Identification struct {
+			Type   string `json:"type"`
+			Number string `json:"number"`
+		} `json:"identification"`
+	} `json:"payer"`
+}
+
+type CartItemView struct {
+	Cupcake  model.Cupcake
+	Quantity int
+	Subtotal float64
+}
+
+type CartHandler struct {
+	Store *sessions.CookieStore
+	MPCfg *config.Config
+}
+
+const CartSessionKey = "shopping_cart"
+
+func (h *CartHandler) AddToCart(c *gin.Context) {
+	idStr := c.Param("id")
+	id64, err := strconv.ParseUint(idStr, 10, 32)
+	if err != nil {
+		c.String(http.StatusBadRequest, "ID do cupcake inválido.")
+		return
+	}
+	cupcakeID := uint(id64)
+
+	var cupcake model.Cupcake
+	if err := database.DB.Where("id = ? AND disponivel = ?", cupcakeID, true).First(&cupcake).Error; err != nil {
+		c.String(http.StatusNotFound, "Cupcake não encontrado ou indisponível.")
+		return
+	}
+
+	session, _ := h.Store.Get(c.Request, "meu-cupcake-session")
+	cartData := session.Values[CartSessionKey]
+
+	cart, ok := cartData.(map[uint]int)
+	if !ok {
+		cart = make(map[uint]int)
+	}
+
+	cart[cupcakeID]++
+
+	session.Values[CartSessionKey] = cart
+	if err := session.Save(c.Request, c.Writer); err != nil {
+		c.String(http.StatusInternalServerError, "Erro ao salvar o carrinho.")
+		return
+	}
+
+	session.AddFlash("Cupcake adicionado ao carrinho!", "success")
+	session.Save(c.Request, c.Writer)
+
+	returnTo := c.PostForm("return_to")
+	if returnTo == "cart" {
+		c.Redirect(http.StatusFound, "/carrinho")
+	} else {
+		c.Redirect(http.StatusFound, "/vitrine")
+	}
+}
+
+// ShowCartPage exibe o conteúdo do carrinho de compras.
+func (h *CartHandler) ShowCartPage(c *gin.Context) {
+	session, _ := h.Store.Get(c.Request, "meu-cupcake-session")
+	cartData := session.Values[CartSessionKey]
+	user, isLoggedIn := h.getUserFromSession(c)
+
+	cart, ok := cartData.(map[uint]int)
+	if !ok || len(cart) == 0 {
+		flashesSuccess := session.Flashes("success")
+		flashesError := session.Flashes("error")
+		session.Save(c.Request, c.Writer)
+		c.HTML(http.StatusOK, "carrinho.html", gin.H{
+			"Items":          []CartItemView{},
+			"Total":          0.0,
+			"IsLoggedIn":     isLoggedIn,
+			"User":           user,
+			"CartItemCount":  0,
+			"FlashesSuccess": flashesSuccess,
+			"FlashesError":   flashesError,
+		})
+		return
+	}
+
+	cupcakeIDs := make([]uint, 0, len(cart))
+	for id := range cart {
+		cupcakeIDs = append(cupcakeIDs, id)
+	}
+
+	var cupcakes []model.Cupcake
+	database.DB.Where("id IN ? AND disponivel = ?", cupcakeIDs, true).Find(&cupcakes)
+
+	var total float64
+	cartItemsView := make([]CartItemView, 0, len(cupcakes))
+	cupcakeMap := make(map[uint]model.Cupcake)
+	for _, cp := range cupcakes {
+		cupcakeMap[cp.ID] = cp
+	}
+
+	finalCart := make(map[uint]int)
+	for id, quantity := range cart {
+		if cupcake, found := cupcakeMap[id]; found {
+			subtotal := cupcake.Preco * float64(quantity)
+			cartItemsView = append(cartItemsView, CartItemView{
+				Cupcake: cupcake, Quantity: quantity, Subtotal: subtotal,
+			})
+			total += subtotal
+			finalCart[id] = quantity
+		}
+	}
+
+	sort.Slice(cartItemsView, func(i, j int) bool {
+		return cartItemsView[i].Cupcake.Nome < cartItemsView[j].Cupcake.Nome
+	})
+
+	cartCount := getTotalCartQuantityHelper(finalCart)
+
+	flashesSuccess := session.Flashes("success")
+	flashesError := session.Flashes("error")
+	session.Save(c.Request, c.Writer)
+
+	c.HTML(http.StatusOK, "carrinho.html", gin.H{
+		"Items":          cartItemsView,
+		"Total":          total,
+		"IsLoggedIn":     isLoggedIn,
+		"User":           user,
+		"CartItemCount":  cartCount,
+		"FlashesSuccess": flashesSuccess,
+		"FlashesError":   flashesError,
+	})
+}
+
+func (h *CartHandler) RemoveFromCart(c *gin.Context) {
+	idStr := c.Param("id")
+	id64, err := strconv.ParseUint(idStr, 10, 32)
+	if err != nil {
+		c.String(http.StatusBadRequest, "ID inválido.")
+		return
+	}
+	cupcakeID := uint(id64)
+
+	session, _ := h.Store.Get(c.Request, "meu-cupcake-session")
+	cartData := session.Values[CartSessionKey]
+
+	cart, ok := cartData.(map[uint]int)
+	if !ok || len(cart) == 0 {
+		c.Redirect(http.StatusFound, "/carrinho")
+		return
+	}
+
+	delete(cart, cupcakeID)
+
+	session.Values[CartSessionKey] = cart
+	if err := session.Save(c.Request, c.Writer); err != nil {
+		c.String(http.StatusInternalServerError, "Erro ao atualizar o carrinho.")
+		return
+	}
+	session.AddFlash("Item removido do carrinho.", "success")
+	session.Save(c.Request, c.Writer)
+	c.Redirect(http.StatusFound, "/carrinho")
+}
+
+func (h *CartHandler) DecreaseQuantity(c *gin.Context) {
+	idStr := c.Param("id")
+	id64, err := strconv.ParseUint(idStr, 10, 32)
+	if err != nil {
+		c.String(http.StatusBadRequest, "ID inválido.")
+		return
+	}
+	cupcakeID := uint(id64)
+
+	session, _ := h.Store.Get(c.Request, "meu-cupcake-session")
+	cartData := session.Values[CartSessionKey]
+
+	cart, ok := cartData.(map[uint]int)
+	if !ok || len(cart) == 0 {
+		c.Redirect(http.StatusFound, "/carrinho")
+		return
+	}
+
+	if quantity, exists := cart[cupcakeID]; exists {
+		if quantity > 1 {
+			cart[cupcakeID]--
+		} else {
+			delete(cart, cupcakeID)
+		}
+		session.Values[CartSessionKey] = cart
+		if err := session.Save(c.Request, c.Writer); err != nil {
+			c.String(http.StatusInternalServerError, "Erro ao atualizar o carrinho.")
+			return
+		}
+	}
+
+	returnTo := c.PostForm("return_to")
+	if returnTo == "cart" {
+		c.Redirect(http.StatusFound, "/carrinho")
+	} else {
+		c.Redirect(http.StatusFound, "/carrinho")
+	}
+}
+
+func (h *CartHandler) ClearCart(c *gin.Context) {
+	session, _ := h.Store.Get(c.Request, "meu-cupcake-session")
+	session.Values[CartSessionKey] = make(map[uint]int)
+	if err := session.Save(c.Request, c.Writer); err != nil {
+		c.String(http.StatusInternalServerError, "Erro ao limpar o carrinho.")
+		return
+	}
+	session.AddFlash("Carrinho esvaziado.", "success")
+	session.Save(c.Request, c.Writer)
+	c.Redirect(http.StatusFound, "/carrinho")
+}
+
+func (h *CartHandler) ShowCheckoutPage(c *gin.Context) {
+	session, _ := h.Store.Get(c.Request, "meu-cupcake-session")
+	cartData := session.Values[CartSessionKey]
+	userData, _ := c.Get("user")
+	user := userData.(model.Usuario)
+
+	cart, ok := cartData.(map[uint]int)
+	if !ok || len(cart) == 0 {
+		c.Redirect(http.StatusFound, "/carrinho")
+		return
+	}
+
+	cupcakeIDs := make([]uint, 0, len(cart))
+	for id := range cart {
+		cupcakeIDs = append(cupcakeIDs, id)
+	}
+
+	var cupcakes []model.Cupcake
+	result := database.DB.Where("id IN ? AND disponivel = ?", cupcakeIDs, true).Find(&cupcakes)
+	if result.Error != nil && result.Error != gorm.ErrRecordNotFound {
+		c.String(http.StatusInternalServerError, "Erro ao buscar detalhes dos produtos.")
+		return
+	}
+
+	if len(cupcakes) != len(cart) {
+		fmt.Printf("Checkout inválido: Itens na sessão (%d) != Itens válidos no DB (%d)\n", len(cart), len(cupcakes))
+		session.AddFlash("Alguns itens no seu carrinho não estão mais disponíveis. Verifique seu carrinho.", "error")
+		session.Save(c.Request, c.Writer)
+		c.Redirect(http.StatusFound, "/carrinho")
+		return
+	}
+
+	var total float64
+	cartItemsView := make([]CartItemView, 0, len(cupcakes))
+	cupcakeMap := make(map[uint]model.Cupcake)
+	for _, cp := range cupcakes {
+		cupcakeMap[cp.ID] = cp
+	}
+	finalCart := make(map[uint]int)
+	for id, quantity := range cart {
+		if cupcake, found := cupcakeMap[id]; found {
+			subtotal := cupcake.Preco * float64(quantity)
+			cartItemsView = append(cartItemsView, CartItemView{
+				Cupcake: cupcake, Quantity: quantity, Subtotal: subtotal,
+			})
+			total += subtotal
+			finalCart[id] = quantity
+		}
+	}
+	cartCount := getTotalCartQuantityHelper(finalCart)
+
+	mpPublicKey := os.Getenv("MP_PUBLIC_KEY")
+	if mpPublicKey == "" {
+		fmt.Println("AVISO: MP_PUBLIC_KEY não encontrada no .env")
+	}
+
+	c.HTML(http.StatusOK, "checkout.html", gin.H{
+		"Items":                cartItemsView,
+		"Total":                total,
+		"IsLoggedIn":           true,
+		"User":                 user,
+		"CartItemCount":        cartCount,
+		"MercadoPagoPublicKey": mpPublicKey,
+	})
+}
+
+func (h *CartHandler) ProcessPayment(c *gin.Context) {
+	if h.MPCfg == nil {
+		fmt.Println("FATAL: Configuração do Mercado Pago é nula (nil) no handler.")
+		c.JSON(http.StatusInternalServerError, gin.H{"status": "error", "message": "Erro interno: config pagamento."})
+		return
+	}
+
+	var reqData PaymentRequestData
+	if err := c.ShouldBindJSON(&reqData); err != nil {
+		fmt.Printf("Erro Bind JSON: %v\n", err)
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Dados inválidos.", "details": err.Error()})
+		return
+	}
+	fmt.Printf("Dados Pagamento Recebidos: %+v\n", reqData)
+
+	userData, exists := c.Get("user")
+	if !exists {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "Usuário não autenticado."})
+		return
+	}
+	user := userData.(model.Usuario)
+
+	session, _ := h.Store.Get(c.Request, "meu-cupcake-session")
+	cartData := session.Values[CartSessionKey]
+	cart, ok := cartData.(map[uint]int)
+	if !ok || len(cart) == 0 {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Carrinho vazio ou inválido."})
+		return
+	}
+
+	var currentTotal float64
+	cupcakeIDs := make([]uint, 0, len(cart))
+	for id := range cart {
+		cupcakeIDs = append(cupcakeIDs, id)
+	}
+
+	var cupcakesFromDB []model.Cupcake
+	result := database.DB.Where("id IN ? AND disponivel = ?", cupcakeIDs, true).Find(&cupcakesFromDB)
+	if result.Error != nil && result.Error != gorm.ErrRecordNotFound {
+		fmt.Printf("Erro DB ao buscar cupcakes: %v\n", result.Error)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Erro ao verificar produtos."})
+		return
+	}
+
+	cupcakeMap := make(map[uint]model.Cupcake)
+	for _, cp := range cupcakesFromDB {
+		cupcakeMap[cp.ID] = cp
+	}
+
+	validItems := make([]CartItemView, 0, len(cart))
+	validItemCount := 0
+	for id, quantity := range cart {
+		cupcake, found := cupcakeMap[id]
+		if found {
+			subtotal := cupcake.Preco * float64(quantity)
+			validItems = append(validItems, CartItemView{
+				Cupcake: cupcake, Quantity: quantity, Subtotal: subtotal,
+			})
+			currentTotal += subtotal
+			validItemCount++
+		}
+	}
+
+	if validItemCount != len(cart) || len(validItems) == 0 {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Um ou mais itens no seu carrinho não estão mais disponíveis."})
+		return
+	}
+
+	// --- Validação do Total ---
+	tolerance := 0.01
+	if (currentTotal-reqData.TransactionAmount) > tolerance || (reqData.TransactionAmount-currentTotal) > tolerance {
+		fmt.Printf("ALERTA SEGURANÇA: Total Backend (%.2f) != Total Frontend (%.2f)\n", currentTotal, reqData.TransactionAmount)
+		c.JSON(http.StatusBadRequest, gin.H{"error": "O valor total do pedido foi modificado."})
+		return
+	}
+	fmt.Printf("Validação Total OK: Backend=%.2f, Frontend=%.2f\n", currentTotal, reqData.TransactionAmount)
+
+	// --- Criação do Pedido no DB (Transação) ---
+	var pedidoCriado model.Order
+	err := database.DB.Transaction(func(tx *gorm.DB) error {
+		externalRef := fmt.Sprintf("pedido_%d_%d", user.ID, time.Now().UnixNano())
+		pedido := model.Order{
+			UsuarioID: user.ID, Status: model.StatusPendente, Total: currentTotal,
+			MetodoPagamento: reqData.PaymentMethodID, Parcelas: reqData.Installments, ExternalReference: externalRef,
+		}
+		if err := tx.Create(&pedido).Error; err != nil {
+			return errors.New("erro ao criar o cabeçalho do pedido")
+		}
+		pedidoCriado = pedido
+		for _, item := range validItems {
+			itemPedido := model.ItemOrder{
+				PedidoID:      pedido.ID,
+				CupcakeID:     item.Cupcake.ID,
+				Quantidade:    item.Quantity,
+				PrecoUnitario: item.Cupcake.Preco,
+				Subtotal:      item.Subtotal,
+			}
+			if err := tx.Create(&itemPedido).Error; err != nil {
+				return errors.New("erro ao salvar os itens do pedido")
+			}
+		}
+		return nil
+	})
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Não foi possível registrar seu pedido.", "details": err.Error()})
+		return
+	}
+	fmt.Printf("Pedido %d criado no DB (Ref: %s)\n", pedidoCriado.ID, pedidoCriado.ExternalReference)
+
+	// --- Chamada à API do Mercado Pago ---
+	fmt.Println("Tentando criar pagamento MP...")
+	client := payment.NewClient(h.MPCfg)
+	request := payment.Request{
+		TransactionAmount: currentTotal,
+		Token:             reqData.Token,
+		Description:       reqData.Description,
+		Installments:      reqData.Installments,
+		PaymentMethodID:   reqData.PaymentMethodID,
+		IssuerID:          reqData.IssuerID,
+		ExternalReference: pedidoCriado.ExternalReference,
+		Payer: &payment.PayerRequest{
+			Email: reqData.Payer.Email,
+			Identification: &payment.IdentificationRequest{
+				Type:   reqData.Payer.Identification.Type,
+				Number: reqData.Payer.Identification.Number,
+			},
+		},
+		// notification_url: "SUA_URL_WEBHOOK"
+	}
+
+	resource, err := client.Create(context.Background(), request) // Usa := aqui
+
+	// --- Tratamento da Resposta e Atualização do Pedido no DB ---
+	var finalPedidoStatus model.StatusOrder = model.StatusFalhou
+	var responseStatus string = "rejected"
+	var message string = "Pagamento recusado ou pendente."
+	var mpPaymentID *int64 = nil
+
+	if err != nil {
+		fmt.Printf("Erro MP: %v\n", err)
+		message = "Erro ao processar pagamento com o provedor."
+	} else {
+		fmt.Printf("Resposta MP: Status=%s, Detail=%s, ID=%d\n", resource.Status, resource.StatusDetail, resource.ID)
+		tempID := int64(resource.ID)
+		mpPaymentID = &tempID
+		switch resource.Status {
+		case "approved":
+			finalPedidoStatus = model.StatusPago
+			responseStatus = "approved"
+			message = "Pagamento aprovado!"
+			session.Values[CartSessionKey] = make(map[uint]int)
+			session.Save(c.Request, c.Writer)
+		case "in_process", "pending":
+			finalPedidoStatus = model.StatusPendente
+			responseStatus = "pending"
+			message = "Pagamento pendente."
+		default:
+			finalPedidoStatus = model.StatusFalhou
+			responseStatus = "rejected"
+			message = fmt.Sprintf("Pagamento não aprovado (%s).", resource.StatusDetail)
+		}
+	}
+
+	updateResult := database.DB.Model(&pedidoCriado).Updates(model.Order{
+		Status: finalPedidoStatus, PagamentoMPID: mpPaymentID,
+	})
+	if updateResult.Error != nil {
+		fmt.Printf("ERRO CRÍTICO DB UPDATE Pedido %d: %v\n", pedidoCriado.ID, updateResult.Error)
+	}
+
+	c.JSON(http.StatusOK, gin.H{"status": responseStatus, "message": message, "paymentId": mpPaymentID})
+}
+
+// --- Funções Auxiliares ---
+func (h *CartHandler) getUserFromSession(c *gin.Context) (model.Usuario, bool) {
+	session, _ := h.Store.Get(c.Request, "meu-cupcake-session")
+	userID, ok := session.Values["userID"].(uint)
+	if !ok {
+		return model.Usuario{}, false
+	}
+	var user model.Usuario
+	if err := database.DB.First(&user, userID).Error; err != nil {
+		return model.Usuario{}, false
+	}
+	return user, true
+}
+
+func getTotalCartQuantityHelper(cart map[uint]int) int {
+	if cart == nil {
+		return 0
+	}
+	totalQuantity := 0
+	for _, quantity := range cart {
+		totalQuantity += quantity
+	}
+	return totalQuantity
+}
