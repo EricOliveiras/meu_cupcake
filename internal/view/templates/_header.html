@@ -1,27 +1,83 @@
 {{ define "_header.html" }}
 <header class="main-header">
-  {{/* Lógica principal: verifica se o usuário está logado ou não */}} {{ if
-  .IsLoggedIn }} {{/* Lógica do Logo: link dinâmico baseado no tipo do usuário
-  */}} {{ if eq .User.Tipo "cliente" }}
+  {{/* Lógica principal: verifica se o usuário está logado */}} {{ if
+  .IsLoggedIn }} {{/* Lógica do Logo: link dinâmico */}} {{ if eq .User.Tipo
+  "cliente" }}
   <div class="logo"><a href="/cliente/dashboard">Meu Cupcake</a></div>
   {{ else if eq .User.Tipo "lojista" }}
   <div class="logo"><a href="/lojista/dashboard">Meu Cupcake</a></div>
   {{ else }}
   <div class="logo"><a href="/">Meu Cupcake</a></div>
-  {{ end }}
-
+  {{ end }} {{/* Navegação separada por tipo */}} {{ if eq .User.Tipo "lojista"
+  }}
   <nav class="nav-links">
+    <a href="/logout" class="btn btn-primary">Sair</a>
+  </nav>
+  {{ else if eq .User.Tipo "cliente" }}
+  <nav class="nav-links">
+    <a href="/carrinho" class="cart-icon-link">
+      🛒 {{ if gt .CartItemCount 0 }}
+      <span class="cart-badge">{{ .CartItemCount }}</span>
+      {{ end }}
+    </a>
+    {{ if ne .ActivePage "vitrine" }}<a
+      href="/vitrine"
+      class="btn btn-secondary"
+      >Vitrine</a
+    >{{ end }}
+
     <a href="/perfil" class="btn btn-secondary">Meu Perfil</a>
     <a href="/logout" class="btn btn-primary">Sair</a>
   </nav>
-
   {{ else }}
+  <nav class="nav-links">
+    <a href="/logout" class="btn btn-primary">Sair</a>
+  </nav>
+  {{ end }} {{ else }}
   <div class="logo"><a href="/">Meu Cupcake</a></div>
 
   <nav class="nav-links">
+    {{/* --- CORREÇÃO AQUI: Adiciona classes ao link Vitrine --- */}} {{ if ne
+    .ActivePage "vitrine" }}<a href="/vitrine" class="btn btn-secondary"
+      >Vitrine</a
+    >{{ end }}
+    <a href="/carrinho" class="cart-icon-link">
+      🛒 {{ if gt .CartItemCount 0 }}
+      <span class="cart-badge">{{ .CartItemCount }}</span>
+      {{ end }}
+    </a>
     <a href="/login" class="btn btn-secondary">Entrar</a>
     <a href="/cadastro" class="btn btn-primary">Cadastrar</a>
   </nav>
-  {{ end }}
+  {{ end }} {{/* Fim do if .IsLoggedIn */}}
 </header>
-{{ end }}
+
+<style>
+  /* --- ESTILOS DO ÍCONE DO CARRINHO E BADGE --- */
+
+  .cart-icon-link {
+    position: relative; /* Necessário para posicionar o badge relativo a este link */
+    text-decoration: none;
+    font-size: 1.5rem; /* Tamanho do ícone de carrinho (🛒) */
+    color: #333; /* Cor do ícone */
+    margin: 0 0.5rem; /* Espaçamento ao redor do ícone */
+    display: inline-block; /* Garante que a posição relativa funcione corretamente */
+  }
+
+  .cart-badge {
+    position: absolute; /* Posiciona o badge em relação ao .cart-icon-link */
+    top: -8px; /* Desloca o badge um pouco para cima */
+    right: -10px; /* Desloca o badge um pouco para a direita */
+    background-color: red; /* Cor de fundo da bolinha */
+    color: white; /* Cor do número dentro da bolinha */
+    border-radius: 50%; /* Faz o formato de círculo */
+    padding: 2px 6px; /* Espaçamento interno (vertical, horizontal) */
+    font-size: 0.75rem; /* Tamanho da fonte do número */
+    font-weight: bold;
+    line-height: 1; /* Garante que o número fique centralizado verticalmente */
+    min-width: 10px; /* Largura mínima para garantir que a bolinha apareça mesmo com 1 dígito */
+    text-align: center;
+    box-shadow: 0 0 1px 1px rgba(0, 0, 0, 0.1); /* Sombra sutil opcional */
+  }
+</style>
+{{ end }} {{/* Fim do define "_header.html" */}}
