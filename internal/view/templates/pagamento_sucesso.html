@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Pagamento Aprovado!</title>
+    <link rel="stylesheet" href="/static/css/style.css" />
+    <style>
+      .container {
+        text-align: center;
+        padding-top: 4rem;
+      }
+      h1 {
+        color: #28a745;
+      }
+    </style>
+  </head>
+  <body>
+    {{ template "_header.html" . }}
+    <div class="container">
+      <h1>🎉 Pagamento Aprovado! 🎉</h1>
+      <p>Seu pedido foi recebido com sucesso. Obrigado por comprar conosco!</p>
+      <a
+        href="/cliente/dashboard"
+        class="btn btn-primary"
+        style="margin-top: 2rem"
+        >Ver Meus Pedidos</a
+      >
+    </div>
+  </body>
+</html>
