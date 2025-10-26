@@ -19,8 +19,8 @@ const (
 	StatusCancelado StatusOrder = "cancelado"
 )
 
-// Pedido representa uma ordem de compra no sistema.
-type Pedido struct {
+// Order representa uma ordem de compra no sistema.
+type Order struct {
 	ID        uint        `gorm:"primaryKey"`
 	UsuarioID uint        `gorm:"not null"`             // Chave estrangeira para o usuário cliente
 	Usuario   Usuario     `gorm:"foreignKey:UsuarioID"` // Relacionamento com Usuario
