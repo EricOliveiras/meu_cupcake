@@ -1,0 +1,405 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Finalizar Compra - Meu Cupcake</title>
+    <link rel="stylesheet" href="/static/css/style.css" />
+    <style>
+      .container {
+        max-width: 800px;
+        margin: 2rem auto;
+      }
+      .checkout-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr; /* Colunas de tamanho igual */
+        gap: 2rem;
+      }
+      .order-summary,
+      .payment-details {
+        background-color: white;
+        padding: 2rem;
+        border-radius: 8px;
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+      }
+      h2 {
+        color: #ff69b4;
+        margin-top: 0;
+        border-bottom: 1px solid #eee;
+        padding-bottom: 1rem;
+        margin-bottom: 1rem;
+      }
+      .summary-item {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 10px 0;
+        border-bottom: 1px dashed #eee;
+      }
+      .summary-item:last-child {
+        border-bottom: none;
+      }
+      .summary-item img {
+        width: 50px;
+        height: 50px;
+        object-fit: cover;
+        border-radius: 4px;
+        margin-right: 10px;
+      }
+      .item-info {
+        flex-grow: 1;
+      }
+      .item-info span {
+        display: block;
+      }
+      .item-info .name {
+        font-weight: bold;
+      }
+      .item-info .qty {
+        font-size: 0.9em;
+        color: #666;
+      }
+      .item-price {
+        font-weight: bold;
+      }
+      .total-row {
+        display: flex;
+        justify-content: space-between;
+        font-size: 1.3rem;
+        font-weight: bold;
+        margin-top: 1.5rem;
+        padding-top: 1rem;
+        border-top: 2px solid #333;
+      }
+      .total-row span:last-child {
+        color: #ff69b4;
+      }
+
+      /* --- ESTILOS CORRIGIDOS PARA BRICKS E FORMULÁRIO --- */
+      .form-group {
+        margin-bottom: 1rem;
+      }
+      label {
+        display: block;
+        margin-bottom: 0.5rem;
+        font-weight: bold;
+      }
+      /* Estilo para inputs normais (melhora consistência) */
+      input[type="text"],
+      input[type="email"],
+      select {
+        padding: 10px;
+        border: 1px solid #ccc;
+        border-radius: 4px;
+        width: 100%;
+        box-sizing: border-box;
+        height: 40px; /* Altura consistente */
+      }
+      /* Estilo para os containers dos Bricks */
+      .brick-container {
+        border: 1px solid #ccc;
+        padding: 8px 12px;
+        border-radius: 4px;
+        height: 20px;
+      }
+      /* Ajuste fino (opcional): se o iframe ainda ficar desalinhado, pode tentar: */
+      /* #cardNumberBrick_container iframe,
+        #expirationDateBrick_container iframe,
+        #securityCodeBrick_container iframe {
+             height: 22px !important; 
+        } */
+
+      .progress-bar {
+        width: 100%; /* Ocupa toda a largura */
+        height: 8px; /* Altura visível */
+        margin-top: 10px;
+        border: none;
+        border-radius: 4px;
+        appearance: none; /* Remove estilo padrão do navegador */
+        background-color: #eee; /* Cor de fundo */
+      }
+
+      /* Estilo da 'barra' de progresso (para navegadores WebKit/Blink como Chrome, Edge) */
+      .progress-bar::-webkit-progress-bar {
+        background-color: #eee;
+        border-radius: 4px;
+      }
+      .progress-bar::-webkit-progress-value {
+        background-color: #ff69b4; /* Cor da barra em progresso */
+        border-radius: 4px;
+        transition: width 0.1s ease; /* Animação suave (opcional) */
+      }
+      /* Estilo da 'barra' de progresso (para Firefox) */
+      .progress-bar::-moz-progress-bar {
+        background-color: #ff69b4;
+        border-radius: 4px;
+        transition: width 0.1s ease;
+      }
+
+      /* Animação simples para indicar atividade indeterminada */
+      /* (Opcional, mas útil já que não atualizamos o 'value') */
+      .progress-bar:indeterminate {
+        background-image: linear-gradient(to right, #ff69b4 30%, #eee 30%);
+        background-size: 150% 100%;
+        animation: progress-indeterminate 2s linear infinite;
+      }
+      @keyframes progress-indeterminate {
+        0% {
+          background-position: 200% 0;
+        }
+        100% {
+          background-position: -200% 0;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    {{ template "_header.html" . }}
+
+    <div class="container">
+      <h1>Finalizar Compra</h1>
+
+      <div class="checkout-grid">
+        <div class="order-summary">
+          <h2>Resumo do Pedido</h2>
+          {{ range .Items }}
+          <div class="summary-item">
+            <img src="{{ .Cupcake.ImagemURL }}" alt="{{ .Cupcake.Nome }}" />
+            <div class="item-info">
+              <span class="name">{{ .Cupcake.Nome }}</span>
+              <span class="qty">Quantidade: {{ .Quantity }}</span>
+            </div>
+            <span class="item-price">R$ {{ printf "%.2f" .Subtotal }}</span>
+          </div>
+          {{ else }}
+          <p>Nenhum item encontrado.</p>
+          {{ end }}
+          <div class="total-row">
+            <span>Total:</span>
+            <span>R$ {{ printf "%.2f" .Total }}</span>
+          </div>
+        </div>
+
+        <div class="payment-details">
+          <h2>Pagamento</h2>
+          <form
+            id="form-checkout"
+            action="/cliente/processar-pagamento"
+            method="post"
+          >
+            <div class="form-group">
+              <label for="cardNumber">Número do Cartão</label>
+              <div id="cardNumberBrick_container" class="brick-container"></div>
+            </div>
+            <div style="display: flex; gap: 1rem">
+              <div class="form-group" style="flex: 1">
+                <label for="expirationDate">Validade</label>
+                <div
+                  id="expirationDateBrick_container"
+                  class="brick-container"
+                ></div>
+              </div>
+              <div class="form-group" style="flex: 1">
+                <label for="securityCode">CVV</label>
+                <div
+                  id="securityCodeBrick_container"
+                  class="brick-container"
+                ></div>
+              </div>
+            </div>
+            <div class="form-group">
+              <label for="cardholderName">Nome no Cartão</label>
+              <input
+                type="text"
+                id="form-checkout__cardholderName"
+                name="cardholderName"
+              />
+            </div>
+            <div class="form-group">
+              <label for="issuer">Banco Emissor</label>
+              <select id="form-checkout__issuer" name="issuer"></select>
+            </div>
+            <div class="form-group">
+              <label for="installments">Parcelas</label>
+              <select
+                id="form-checkout__installments"
+                name="installments"
+              ></select>
+            </div>
+            <div class="form-group">
+              <label for="identificationType">Tipo de Documento</label>
+              <select
+                id="form-checkout__identificationType"
+                name="identificationType"
+              ></select>
+            </div>
+            <div class="form-group">
+              <label for="identificationNumber">Número do Documento</label>
+              <input
+                type="text"
+                id="form-checkout__identificationNumber"
+                name="identificationNumber"
+              />
+            </div>
+            <div class="form-group">
+              <label for="email">E-mail</label>
+              <input
+                type="email"
+                id="form-checkout__cardholderEmail"
+                name="email"
+                value="{{ .User.Email }}"
+              />
+            </div>
+
+            <input type="hidden" name="transactionAmount" id="transactionAmount"
+            value="{{ printf "%.2f" .Total }}" />
+            <input type="hidden" name="paymentMethodId" id="paymentMethodId" />
+            <input
+              type="hidden"
+              name="description"
+              id="description"
+              value="Pedido Meu Cupcake"
+            />
+
+            <button
+              type="submit"
+              id="form-checkout__submit"
+              class="btn btn-primary"
+              style="width: 100%"
+            >
+              Pagar Agora
+            </button>
+            <progress
+              value="0"
+              class="progress-bar"
+              style="display: none; width: 100%; margin-top: 10px"
+            >
+              Carregando...
+            </progress>
+          </form>
+        </div>
+      </div>
+    </div>
+
+    <script src="https://sdk.mercadopago.com/js/v2"></script>
+
+    <script>
+      const mp = new MercadoPago("{{ .MercadoPagoPublicKey }}");
+      const cardForm = mp.cardForm({
+        amount: document.getElementById("transactionAmount").value,
+        iframe: true,
+        form: {
+          id: "form-checkout",
+          cardNumber: { id: "cardNumberBrick_container" },
+          expirationDate: { id: "expirationDateBrick_container" },
+          securityCode: { id: "securityCodeBrick_container" },
+          cardholderName: { id: "form-checkout__cardholderName" },
+          issuer: { id: "form-checkout__issuer" },
+          installments: { id: "form-checkout__installments" },
+          identificationType: { id: "form-checkout__identificationType" },
+          identificationNumber: { id: "form-checkout__identificationNumber" },
+          cardholderEmail: { id: "form-checkout__cardholderEmail" },
+        },
+        callbacks: {
+          onFormMounted: (error) => {
+            if (error)
+              return console.warn("Form Mounted handling error: ", error);
+            console.log("Form mounted");
+          },
+          onSubmit: (event) => {
+            event.preventDefault(); // Garante que impede o envio padrão
+            console.log("onSubmit callback fired!"); // Log de confirmação
+
+            const {
+              paymentMethodId,
+              issuerId,
+              cardholderEmail,
+              amount,
+              token,
+              installments,
+              identificationNumber,
+              identificationType,
+            } = cardForm.getCardFormData();
+
+            document.querySelector(".progress-bar").style.display = "block";
+
+            // *** FETCH CORRIGIDO ***
+            fetch("/cliente/processar-pagamento", {
+              // URL correta
+              method: "POST", // Método correto
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                token: token,
+                issuer_id: issuerId || "", // Garante string vazia se nulo
+                payment_method_id: paymentMethodId,
+                transaction_amount: Number(amount),
+                installments: Number(installments),
+                description: document.getElementById("description").value,
+                payer: {
+                  email: cardholderEmail,
+                  identification: {
+                    type: identificationType,
+                    number: identificationNumber,
+                  },
+                },
+              }),
+            })
+              .then((response) => {
+                // Tratamento de erro aprimorado
+                if (!response.ok) {
+                  return response
+                    .json()
+                    .then((errData) => Promise.reject(errData));
+                }
+                return response.json();
+              })
+              .then((result) => {
+                // Tratamento de sucesso
+                console.log("Pagamento processado:", result);
+                if (result.status === "approved") {
+                  window.location.href = "/pagamento/sucesso";
+                } else {
+                  alert(
+                    "Status do Pagamento: " +
+                      (result.message || "Verifique seus pedidos.")
+                  );
+                  document.querySelector(".progress-bar").style.display =
+                    "none";
+                }
+              })
+              .catch((errorData) => {
+                // Tratamento de erro aprimorado
+                console.error("Erro ao processar pagamento:", errorData);
+                let userMessage =
+                  "Ocorreu um erro inesperado. Tente novamente.";
+                if (errorData && errorData.error) {
+                  if (errorData.error.includes("não estão mais disponíveis")) {
+                    userMessage =
+                      errorData.error +
+                      " Você será redirecionado para o carrinho.";
+                    setTimeout(() => {
+                      window.location.href = "/carrinho";
+                    }, 3000);
+                  } else {
+                    userMessage =
+                      "Erro: " +
+                      errorData.error +
+                      (errorData.details ? ` (${errorData.details})` : "");
+                  }
+                }
+                alert(userMessage);
+                document.querySelector(".progress-bar").style.display = "none";
+              });
+          },
+          onFetching: (resource) => {
+            console.log("Fetching resource: ", resource);
+            document.querySelector(".progress-bar").style.display = "block";
+          },
+          onReady: () => {
+            document.querySelector(".progress-bar").style.display = "none";
+          },
+        },
+      });
+    </script>
+  </body>
+</html>
