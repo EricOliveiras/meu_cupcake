@@ -18,7 +18,7 @@
       }
       .split-left {
         flex: 1;
-        background-image: url("/static/images/cupcake-bg.png"); /* Mesma imagem para consistência */
+        background-image: url("/static/images/cupcake-bg.png"); /* Certifique-se que o nome do arquivo está correto */
         background-size: cover;
         background-position: center;
       }
@@ -62,14 +62,47 @@
         cursor: pointer;
         font-size: 1rem;
       }
+      button:hover {
+        background-color: #ff85c1;
+      }
       .extra-link {
         text-align: center;
         margin-top: 1.5rem;
+        font-size: 0.9rem;
       }
       .extra-link a {
         color: #ff69b4;
         font-weight: bold;
+        text-decoration: none;
       }
+      .extra-link a:hover {
+        text-decoration: underline;
+      }
+
+      /* --- ESTILOS PARA FLASH MESSAGES --- */
+      .flash-messages {
+        padding: 0;
+        margin-bottom: 1.5rem;
+      }
+      .flash {
+        padding: 1rem;
+        margin-bottom: 1rem;
+        border-radius: 5px;
+        border: 1px solid transparent;
+        text-align: center;
+        font-weight: 700;
+      }
+      .flash-success {
+        color: #155724;
+        background-color: #d4edda;
+        border-color: #c3e6cb;
+      }
+      .flash-error {
+        color: #721c24;
+        background-color: #f8d7da;
+        border-color: #f5c6cb;
+      }
+      /* --- FIM ESTILOS FLASH --- */
 
       @media (max-width: 768px) {
         .split-container {
@@ -77,7 +110,7 @@
         }
         .split-left {
           display: none;
-        } /* Em telas pequenas, focamos no formulário */
+        }
       }
     </style>
   </head>
@@ -86,6 +119,19 @@
       <div class="split-left"></div>
       <div class="split-right">
         <div class="form-container">
+          {{ if .FlashesSuccess }}
+          <div class="flash-messages">
+            {{ range .FlashesSuccess }}
+            <div class="flash flash-success">{{ . }}</div>
+            {{ end }}
+          </div>
+          {{ end }} {{ if .FlashesError }}
+          <div class="flash-messages">
+            {{ range .FlashesError }}
+            <div class="flash flash-error">{{ . }}</div>
+            {{ end }}
+          </div>
+          {{ end }}
           <h1>Acesse sua Conta</h1>
           <form action="/login" method="POST">
             <div class="form-group">
