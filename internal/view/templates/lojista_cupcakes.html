@@ -12,13 +12,18 @@
       }
       h1 {
         text-align: left;
-      }
+        color: #333;
+      } /* Ajuste cor H1 */
       .header-actions {
         display: flex;
         justify-content: space-between;
         align-items: center;
         margin-bottom: 1.5rem;
       }
+      .header-actions button {
+        cursor: pointer;
+      } /* Garante cursor no botão */
+
       .cupcakes-table {
         width: 100%;
         border-collapse: collapse;
@@ -116,6 +121,10 @@
         border-radius: 4px;
         box-sizing: border-box;
       }
+      textarea {
+        resize: vertical;
+        min-height: 80px;
+      } /* Ajuste altura textarea */
       .form-actions {
         display: flex;
         justify-content: flex-end;
@@ -123,13 +132,17 @@
         margin-top: 1.5rem;
       }
       .checkbox-group {
-        display: flex; /* 1. Alinha os itens lado a lado */
-        align-items: center; /* 2. Alinha verticalmente no centro */
-        gap: 0.5rem; /* 3. Adiciona um pequeno espaço entre a caixa e o texto */
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
       }
       .checkbox-group input {
-        width: auto; /* Garante que o checkbox não tente ocupar 100% da largura */
+        width: auto;
       }
+      .checkbox-group label {
+        margin-bottom: 0;
+        font-weight: normal;
+      } /* Ajuste label checkbox */
     </style>
   </head>
   <body>
@@ -253,6 +266,7 @@
 
     <script>
       document.addEventListener("DOMContentLoaded", () => {
+        console.log("Script lojista_cupcakes.html carregado."); // Log de verificação
         const modalOverlay = document.getElementById("cupcakeModal");
         const addBtn = document.getElementById("addCupcakeBtn");
         const closeBtn = document.getElementById("closeModalBtn");
@@ -262,45 +276,63 @@
         const form = document.getElementById("cupcakeForm");
         const modalTitle = document.getElementById("modalTitle");
 
-        const openModal = () => (modalOverlay.style.display = "flex");
-        const closeModal = () => (modalOverlay.style.display = "none");
+        const openModal = () => {
+          console.log("Abrindo modal..."); // Log
+          modalOverlay.style.display = "flex";
+        };
+        const closeModal = () => {
+          console.log("Fechando modal..."); // Log
+          modalOverlay.style.display = "none";
+        };
 
-        // Abrir modal para NOVO cupcake
-        addBtn.addEventListener("click", () => {
-          modalTitle.textContent = "Adicionar Novo Cupcake";
-          form.action = "/lojista/cupcakes/novo";
-          form.reset();
-          document.getElementById("imagem").required = true;
-          openModal();
-        });
+        if (addBtn) {
+          console.log("Botão 'Adicionar' encontrado. Adicionando listener."); // Log
+          addBtn.addEventListener("click", () => {
+            console.log("Botão 'Adicionar' clicado!"); // Log
+            modalTitle.textContent = "Adicionar Novo Cupcake";
+            form.action = "/lojista/cupcakes/novo";
+            form.reset();
+            document.getElementById("imagem").required = true;
+            openModal();
+          });
+        } else {
+          console.error("Botão 'addCupcakeBtn' não encontrado!"); // Log de erro
+        }
 
-        // Abrir modal para EDITAR cupcake
         editBtns.forEach((btn) => {
           btn.addEventListener("click", (e) => {
+            console.log("Botão 'Editar' clicado!"); // Log
             e.preventDefault();
 
             const row = e.target.closest("tr");
             const id = row.dataset.id;
+            if (!id) {
+              console.error(
+                "Não foi possível encontrar o data-id na linha da tabela!"
+              );
+              return;
+            }
 
             modalTitle.textContent = "Editar Cupcake";
             form.action = `/lojista/cupcakes/editar/${id}`;
 
-            form.nome.value = row.dataset.name;
-            form.descricao.value = row.dataset.description;
-            form.preco.value = row.dataset.price;
+            form.nome.value = row.dataset.name || "";
+            form.descricao.value = row.dataset.description || "";
+            form.preco.value = row.dataset.price || "";
             form.disponivel.checked = row.dataset.available === "true";
             document.getElementById("imagem").required = false;
+            document.getElementById("imagem").value = ""; // Limpa seleção de arquivo anterior
 
             openModal();
           });
         });
 
-        // Fechar o modal
-        closeBtn.addEventListener("click", closeModal);
-        cancelBtn.addEventListener("click", closeModal);
-        modalOverlay.addEventListener("click", (e) => {
-          if (e.target === modalOverlay) closeModal();
-        });
+        if (closeBtn) closeBtn.addEventListener("click", closeModal);
+        if (cancelBtn) cancelBtn.addEventListener("click", closeModal);
+        if (modalOverlay)
+          modalOverlay.addEventListener("click", (e) => {
+            if (e.target === modalOverlay) closeModal();
+          });
       });
     </script>
   </body>
