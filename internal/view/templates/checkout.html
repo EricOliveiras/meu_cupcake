@@ -9,6 +9,8 @@
       .container {
         max-width: 800px;
         margin: 2rem auto;
+        padding: 0 1rem; /* Adiciona padding lateral em telas pequenas */
+        box-sizing: border-box;
       }
       .checkout-grid {
         display: grid;
@@ -100,44 +102,34 @@
         border: 1px solid #ccc;
         padding: 8px 12px;
         border-radius: 4px;
-        height: 20px;
+        /* height: 20px; */ /* Removido 'height' fixo para melhor adaptação */
+        height: 20px; /* Usa min-height se necessário */
       }
-      /* Ajuste fino (opcional): se o iframe ainda ficar desalinhado, pode tentar: */
-      /* #cardNumberBrick_container iframe,
-        #expirationDateBrick_container iframe,
-        #securityCodeBrick_container iframe {
-             height: 22px !important; 
-        } */
 
+      /* --- Estilos da Barra de Progresso --- */
       .progress-bar {
-        width: 100%; /* Ocupa toda a largura */
-        height: 8px; /* Altura visível */
+        width: 100%;
+        height: 8px;
         margin-top: 10px;
         border: none;
         border-radius: 4px;
-        appearance: none; /* Remove estilo padrão do navegador */
-        background-color: #eee; /* Cor de fundo */
+        appearance: none;
+        background-color: #eee;
       }
-
-      /* Estilo da 'barra' de progresso (para navegadores WebKit/Blink como Chrome, Edge) */
       .progress-bar::-webkit-progress-bar {
         background-color: #eee;
         border-radius: 4px;
       }
       .progress-bar::-webkit-progress-value {
-        background-color: #ff69b4; /* Cor da barra em progresso */
+        background-color: #ff69b4;
         border-radius: 4px;
-        transition: width 0.1s ease; /* Animação suave (opcional) */
+        transition: width 0.1s ease;
       }
-      /* Estilo da 'barra' de progresso (para Firefox) */
       .progress-bar::-moz-progress-bar {
         background-color: #ff69b4;
         border-radius: 4px;
         transition: width 0.1s ease;
       }
-
-      /* Animação simples para indicar atividade indeterminada */
-      /* (Opcional, mas útil já que não atualizamos o 'value') */
       .progress-bar:indeterminate {
         background-image: linear-gradient(to right, #ff69b4 30%, #eee 30%);
         background-size: 150% 100%;
@@ -151,6 +143,32 @@
           background-position: -200% 0;
         }
       }
+
+      /* --- CORREÇÃO DE RESPONSIVIDADE ADICIONADA --- */
+      @media (max-width: 768px) {
+        .checkout-grid {
+          grid-template-columns: 1fr; /* Muda para uma única coluna */
+          gap: 1.5rem; /* Reduz o espaçamento */
+        }
+        .order-summary,
+        .payment-details {
+          padding: 1.5rem; /* Reduz o padding interno */
+        }
+        h1 {
+          margin-top: 1rem;
+          margin-bottom: 1rem;
+          font-size: 1.8rem; /* Reduz um pouco o título */
+        }
+        /* Empilha os campos de Validade e CVV */
+        .form-row-split {
+          flex-direction: column;
+          gap: 1rem;
+        }
+        .form-row-split .form-group {
+          flex: none; /* Reseta o flex: 1 */
+        }
+      }
+      /* --- FIM DA CORREÇÃO --- */
     </style>
   </head>
   <body>
@@ -191,7 +209,7 @@
               <label for="cardNumber">Número do Cartão</label>
               <div id="cardNumberBrick_container" class="brick-container"></div>
             </div>
-            <div style="display: flex; gap: 1rem">
+            <div style="display: flex; gap: 1rem" class="form-row-split">
               <div class="form-group" style="flex: 1">
                 <label for="expirationDate">Validade</label>
                 <div
@@ -307,8 +325,8 @@
             console.log("Form mounted");
           },
           onSubmit: (event) => {
-            event.preventDefault(); // Garante que impede o envio padrão
-            console.log("onSubmit callback fired!"); // Log de confirmação
+            event.preventDefault();
+            console.log("onSubmit callback fired!");
 
             const {
               paymentMethodId,
@@ -323,14 +341,12 @@
 
             document.querySelector(".progress-bar").style.display = "block";
 
-            // *** FETCH CORRIGIDO ***
             fetch("/cliente/processar-pagamento", {
-              // URL correta
-              method: "POST", // Método correto
+              method: "POST",
               headers: { "Content-Type": "application/json" },
               body: JSON.stringify({
                 token: token,
-                issuer_id: issuerId || "", // Garante string vazia se nulo
+                issuer_id: issuerId || "",
                 payment_method_id: paymentMethodId,
                 transaction_amount: Number(amount),
                 installments: Number(installments),
@@ -345,7 +361,6 @@
               }),
             })
               .then((response) => {
-                // Tratamento de erro aprimorado
                 if (!response.ok) {
                   return response
                     .json()
@@ -354,7 +369,6 @@
                 return response.json();
               })
               .then((result) => {
-                // Tratamento de sucesso
                 console.log("Pagamento processado:", result);
                 if (result.status === "approved") {
                   window.location.href = "/pagamento/sucesso";
@@ -368,7 +382,6 @@
                 }
               })
               .catch((errorData) => {
-                // Tratamento de erro aprimorado
                 console.error("Erro ao processar pagamento:", errorData);
                 let userMessage =
                   "Ocorreu um erro inesperado. Tente novamente.";

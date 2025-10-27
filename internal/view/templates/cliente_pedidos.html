@@ -2,12 +2,16 @@
 <html lang="pt-br">
   <head>
     <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Meus Pedidos - Meu Cupcake</title>
     <link rel="stylesheet" href="/static/css/style.css" />
     <style>
       .container {
         max-width: 900px;
         margin: 2rem auto;
+        /* --- 2. ADICIONADO PADDING LATERAL E BOX-SIZING --- */
+        padding: 0 1rem;
+        box-sizing: border-box;
       }
       .pedido-card {
         background-color: white;
@@ -23,8 +27,8 @@
         border-bottom: 1px solid #eee;
         padding-bottom: 1rem;
         margin-bottom: 1rem;
-        flex-wrap: wrap;
-        gap: 0.5rem;
+        flex-wrap: wrap; /* Mantém o wrap para telas médias */
+        gap: 0.5rem 1rem; /* Espaçamento vertical e horizontal */
       }
       .pedido-header span {
         font-size: 0.9em;
@@ -36,6 +40,7 @@
         border-radius: 15px;
         color: white;
         font-size: 0.85em;
+        flex-shrink: 0; /* Impede que o status encolha */
       }
       .status-pendente {
         background-color: #ffc107;
@@ -47,7 +52,6 @@
       .status-falhou {
         background-color: #dc3545;
       }
-      /* Adicione outras classes de status conforme necessário */
 
       .pedido-item {
         display: flex;
@@ -64,9 +68,11 @@
       .item-info {
         flex-grow: 1;
         font-size: 0.9em;
+        word-break: break-word; /* Garante que nomes longos quebrem */
       }
       .item-subtotal {
         font-weight: bold;
+        padding-left: 1rem; /* Adiciona espaço */
       }
       .pedido-total {
         text-align: right;
@@ -84,6 +90,36 @@
         box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
         color: #777;
       }
+
+      /* --- 3. ADICIONADA MEDIA QUERY PARA RESPONSIVIDADE --- */
+      @media (max-width: 768px) {
+        .container {
+          margin-top: 1rem;
+          margin-bottom: 1rem;
+        }
+        h1 {
+          font-size: 1.8rem;
+        }
+        .pedido-card {
+          padding: 1rem; /* Menos padding no card */
+        }
+        .pedido-header {
+          flex-direction: column; /* Empilha os itens do cabeçalho */
+          align-items: flex-start; /* Alinha à esquerda */
+          gap: 0.5rem; /* Espaçamento entre os itens empilhados */
+          margin-bottom: 1.5rem; /* Mais espaço abaixo do header */
+        }
+        .pedido-item {
+          align-items: flex-start; /* Alinha imagem e texto no topo */
+        }
+        .item-info {
+          font-size: 1em; /* Fonte um pouco maior para leitura no mobile */
+        }
+        .pedido-total {
+          font-size: 1.2em;
+        }
+      }
+      /* --- FIM DA CORREÇÃO --- */
     </style>
   </head>
   <body>

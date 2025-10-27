@@ -7,6 +7,14 @@
     <link rel="stylesheet" href="/static/css/style.css" />
 
     <style>
+        /* 2. CONTAINER AJUSTADO */
+        .container {
+            max-width: 1200px; /* Vitrine pode ser mais larga */
+            margin: 2rem auto;
+            padding: 0 1rem; /* Padding lateral para mobile */
+            box-sizing: border-box;
+        }
+
         /* --- ESTILOS DA VITRINE --- */
         .vitrine-container {
             display: flex; flex-wrap: wrap; gap: 2rem; justify-content: center;
@@ -34,7 +42,7 @@
         .price { font-size: 1.2rem; font-weight: bold; color: #ff69b4; }
 
         /* --- ESTILO PARA O BOTÃO/FORM --- */
-        .add-to-cart-form button { /* Estiliza o botão dentro do formulário */
+        .add-to-cart-form button {
             background-color: #ff69b4; color: white; border: none;
             padding: 10px 20px; border-radius: 5px; cursor: pointer; font-weight: bold;
         }
@@ -50,10 +58,13 @@
             background-color: white; border-radius: 8px; padding: 2rem;
             width: 90%; max-width: 600px; position: relative;
             display: flex; gap: 1.5rem;
+            box-sizing: border-box; /* Garante padding correto */
         }
-        .modal-img { width: 250px; height: 250px; object-fit: cover; border-radius: 8px; }
+        .modal-img { width: 250px; height: 250px; object-fit: cover; border-radius: 8px; flex-shrink: 0; /* Impede imagem de encolher */ }
+        .modal-info { display: flex; flex-direction: column; flex-grow: 1; }
         .modal-info h2 { margin-top: 0; color: #ff69b4; }
-        .modal-info p { color: #555; line-height: 1.6; }
+        .modal-info p { color: #555; line-height: 1.6; flex-grow: 1; overflow-y: auto; /* Permite rolagem se descrição for longa */ }
+        .modal-info .card-footer { padding: 1rem 0 0 0; } /* Ajusta padding no footer do modal */
         .close-btn {
             position: absolute; top: 10px; right: 20px;
             font-size: 2.5rem; color: #aaa; cursor: pointer;
@@ -64,37 +75,76 @@
             font-size: 1.5rem; margin-right: 1rem;
         }
 
-        .flash-messages {
-        padding: 0; /* Remove padding se não houver container */
-        margin-bottom: 1.5rem;
-    }
-    .flash {
-        padding: 1rem;
-        margin-bottom: 1rem;
-        border-radius: 5px;
-        border: 1px solid transparent;
-        text-align: center;
-        font-weight: bold;
-    }
-    .flash-success {
-        color: #155724;
-        background-color: #d4edda;
-        border-color: #c3e6cb;
-    }
+        /* --- ESTILOS FLASH MESSAGES --- */
+        .flash-messages { padding: 0; margin-bottom: 1.5rem; }
+        .flash { padding: 1rem; margin-bottom: 1rem; border-radius: 5px; border: 1px solid transparent; text-align: center; font-weight: bold; }
+        .flash-success { color: #155724; background-color: #d4edda; border-color: #c3e6cb; }
+        /* 3. ADICIONADO .flash-error PARA CONSISTÊNCIA */
+        .flash-error { color: #721c24; background-color: #f8d7da; border-color: #f5c6cb; }
+
+        /* --- 4. MEDIA QUERY PARA RESPONSIVIDADE --- */
+        @media (max-width: 768px) {
+            .container {
+                margin: 1rem auto;
+                padding: 0 0.5rem; /* Menor padding no container */
+            }
+            h1 {
+                font-size: 1.8rem;
+                margin: 1.5rem 0;
+            }
+            .vitrine-container {
+                gap: 1rem; /* Menor espaçamento */
+            }
+            .cupcake-card {
+                width: 100%; /* Card ocupa largura total */
+                max-width: 350px; /* Limite máximo */
+                margin: 0 auto; /* Centraliza o card */
+            }
+
+            /* Responsividade do Modal */
+            .modal-content {
+                flex-direction: column; /* Empilha imagem e info */
+                padding: 1.5rem;
+                width: 95%; /* Ocupa mais tela */
+                gap: 1rem;
+                max-height: 90vh; /* Garante que modal caiba na altura */
+                overflow-y: auto; /* Permite rolagem no modal se necessário */
+            }
+            .modal-img {
+                padding-top: 10px;
+                width: 100%; /* Imagem ocupa 100% da largura do modal */
+                height: 200px; /* Altura fixa para a imagem */
+            }
+            .modal-info {
+                text-align: center;
+            }
+            .modal-info .card-footer {
+                justify-content: space-around;
+            }
+            .close-btn { top: 5px; right: 10px; font-size: 2rem; }
+        }
     </style>
 </head>
 <body>
     {{ template "_header.html" . }}
 
     <div class="container">
-         {{ if .Flashes }}
-         <div class="flash-messages">
-             {{ range .Flashes }}
-             <div class="flash flash-success">{{ . }}</div>
-             {{ end }}
-         </div>
-         {{ end }}
-         <h1>Nossa Vitrine de Delícias</h1>
+        {{ if .FlashesSuccess }}
+        <div class="flash-messages">
+            {{ range .FlashesSuccess }}
+            <div class="flash flash-success">{{ . }}</div>
+            {{ end }}
+        </div>
+        {{ end }}
+        {{ if .FlashesError }}
+        <div class="flash-messages">
+            {{ range .FlashesError }}
+            <div class="flash flash-error">{{ . }}</div>
+            {{ end }}
+        </div>
+        {{ end }}
+        
+        <h1>Nossa Vitrine de Delícias</h1>
         <div class="vitrine-container">
             {{ range .Cupcakes }}
              <div class="cupcake-card"
@@ -148,31 +198,27 @@
             const modalName = document.getElementById('modalName');
             const modalDescription = document.getElementById('modalDescription');
             const modalPrice = document.getElementById('modalPrice');
-            const modalCartForm = modalOverlay.querySelector('.add-to-cart-form'); // Seleciona o form DENTRO do modal
+            const modalCartForm = modalOverlay.querySelector('.add-to-cart-form');
 
             const closeModal = () => { modalOverlay.style.display = 'none'; };
 
             clickableCards.forEach(card => {
                 card.addEventListener('click', (event) => {
-                    if (event.target.closest('.add-to-cart-form')) { return; } // Não abre modal se clicar no form de add
+                    if (event.target.closest('.add-to-cart-form')) { return; } 
 
-                    // Pega o ID do atributo data-id do card clicado
                     const cupcakeId = card.dataset.id; 
                     if (!cupcakeId) {
                         console.error("Erro: Atributo data-id não encontrado no card.");
-                        return; // Impede abrir o modal se não achar o ID
+                        return;
                     }
 
-                    // Preenche o modal
                     modalImage.src = card.dataset.image;
                     modalName.textContent = card.dataset.name;
                     modalDescription.textContent = card.dataset.description;
                     modalPrice.textContent = `R$ ${card.dataset.price}`;
-                    
-                    // ATUALIZA o action do form DENTRO do modal com o ID correto
                     modalCartForm.action = `/carrinho/adicionar/${cupcakeId}`;
 
-                    modalOverlay.style.display = 'flex'; // Mostra o modal
+                    modalOverlay.style.display = 'flex';
                 });
             });
 

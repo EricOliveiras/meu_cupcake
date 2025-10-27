@@ -2,22 +2,29 @@
 <html lang="pt-br">
   <head>
     <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Meu Perfil - Meu Cupcake</title>
+    <link rel="stylesheet" href="/static/css/style.css" />
+
     <style>
+      /* Estilos existentes */
       body {
         font-family: sans-serif;
         background-color: #f9f9f9;
         color: #333;
         margin: 0;
-        padding: 2rem;
+        /* Removido padding: 2rem; para o body */
       }
       .container {
         max-width: 800px;
-        margin: 0 auto;
+        margin: 2rem auto;
         background-color: white;
         padding: 2rem;
         border-radius: 8px;
         box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        /* --- 2. ADICIONADO PADDING LATERAL E BOX-SIZING --- */
+        padding: 2rem 1rem; /* Padding base */
+        box-sizing: border-box;
       }
       h1 {
         color: #ff69b4;
@@ -27,6 +34,7 @@
       .profile-info p {
         font-size: 1.1rem;
         line-height: 1.6;
+        word-break: break-all; /* Garante que emails longos quebrem */
       }
       .profile-info strong {
         color: #555;
@@ -34,22 +42,54 @@
       .actions {
         margin-top: 2rem;
       }
+
+      /* Garante que os botões do header (se não estiverem no style.css) funcionem */
       .btn {
         text-decoration: none;
         padding: 10px 20px;
         border-radius: 5px;
         font-weight: bold;
+        display: inline-block;
+        border: 1px solid transparent;
+        cursor: pointer;
+        transition: background-color 0.3s;
       }
       .btn-secondary {
         background-color: #6c757d;
         color: white;
+        border-color: #6c757d;
       }
       .btn-secondary:hover {
         background-color: #5a6268;
       }
+
+      /* --- 3. ADICIONADA MEDIA QUERY PARA RESPONSIVIDADE --- */
+      @media (max-width: 768px) {
+        .container {
+          margin: 1rem; /* Menor margem em telas pequenas */
+          padding: 1.5rem; /* Menor padding interno */
+          box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1); /* Sombra mais sutil */
+        }
+        h1 {
+          font-size: 1.8rem;
+          padding-bottom: 0.5rem;
+          margin-bottom: 1rem;
+        }
+        .profile-info p {
+          font-size: 1rem; /* Fonte ligeiramente menor */
+        }
+        .actions .btn {
+          width: 100%; /* Botão ocupa largura total */
+          text-align: center;
+          box-sizing: border-box; /* Garante padding correto */
+        }
+      }
+      /* --- FIM DA CORREÇÃO --- */
     </style>
   </head>
   <body>
+    {{ template "_header.html" . }}
+
     <div class="container">
       <h1>Meu Perfil</h1>
       <div class="profile-info">

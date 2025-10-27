@@ -9,11 +9,13 @@
       .container {
         max-width: 1000px;
         margin: 2rem auto;
+        padding: 0 1rem;
+        box-sizing: border-box;
       }
       h1 {
         text-align: left;
         color: #333;
-      } /* Ajuste cor H1 */
+      }
       .header-actions {
         display: flex;
         justify-content: space-between;
@@ -22,15 +24,23 @@
       }
       .header-actions button {
         cursor: pointer;
-      } /* Garante cursor no botão */
+        flex-shrink: 0;
+      }
 
+      /* --- Estilos da Tabela Responsiva --- */
+      .table-responsive-wrapper {
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+        width: 100%;
+        margin-bottom: 2rem;
+        border-radius: 8px;
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        background-color: white;
+      }
       .cupcakes-table {
         width: 100%;
         border-collapse: collapse;
-        background-color: white;
-        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-        border-radius: 8px;
-        overflow: hidden;
+        min-width: 600px;
       }
       .cupcakes-table th,
       .cupcakes-table td {
@@ -68,7 +78,7 @@
         color: #777;
       }
 
-      /* --- ESTILOS DO MODAL --- */
+      /* --- Estilos do Modal de Formulário --- */
       .modal-overlay {
         position: fixed;
         top: 0;
@@ -88,6 +98,7 @@
         width: 90%;
         max-width: 500px;
         position: relative;
+        box-sizing: border-box;
       }
       .modal-content h2 {
         color: #ff69b4;
@@ -124,7 +135,7 @@
       textarea {
         resize: vertical;
         min-height: 80px;
-      } /* Ajuste altura textarea */
+      }
       .form-actions {
         display: flex;
         justify-content: flex-end;
@@ -142,7 +153,69 @@
       .checkbox-group label {
         margin-bottom: 0;
         font-weight: normal;
-      } /* Ajuste label checkbox */
+      }
+
+      /* --- CSS PARA O MODAL DE CONFIRMAÇÃO --- */
+      .confirm-modal .modal-content {
+        max-width: 400px; /* Modal menor */
+        text-align: center;
+      }
+      .confirm-modal h3 {
+        color: #333;
+        margin-top: 0;
+      }
+      .confirm-modal p {
+        color: #555;
+        margin-bottom: 1.5rem;
+      }
+      .confirm-actions {
+        display: flex;
+        justify-content: center;
+        gap: 1rem;
+      }
+      .confirm-actions .btn-danger {
+        background-color: #dc3545;
+        border-color: #dc3545;
+        color: white;
+      }
+      .confirm-actions .btn-danger:hover {
+        background-color: #c82333;
+        border-color: #bd2130;
+      }
+      /* --- FIM CSS MODAL CONFIRMAÇÃO --- */
+
+      @media (max-width: 768px) {
+        .container {
+          margin: 1rem auto;
+        }
+        .header-actions {
+          flex-direction: column;
+          align-items: stretch;
+          gap: 1rem;
+        }
+        .header-actions h1 {
+          text-align: center;
+          font-size: 1.8rem;
+          margin-bottom: 0;
+        }
+        .header-actions button {
+          width: 100%;
+          box-sizing: border-box;
+        }
+        .modal-content {
+          padding: 1.5rem;
+          width: 95%;
+          max-height: 90vh;
+          overflow-y: auto;
+        }
+        .confirm-actions {
+          flex-direction: column;
+        } /* Empilha botões no mobile */
+        .confirm-actions .btn {
+          width: 100%;
+          box-sizing: border-box;
+        }
+      }
     </style>
   </head>
   <body>
@@ -156,55 +229,54 @@
         </button>
       </div>
 
-      <table class="cupcakes-table">
-        <thead>
-          <tr>
-            <th>Imagem</th>
-            <th>Nome</th>
-            <th>Preço</th>
-            <th>Disponível</th>
-            <th>Ações</th>
-          </tr>
-        </thead>
-        <tbody>
-          {{ range .Cupcakes }}
-          <tr
-            data-id="{{ .ID }}"
-            data-name="{{ .Nome }}"
-            data-description="{{ .Descricao }}"
-            data-price="{{ .Preco }}"
-            data-available="{{ .Disponivel }}"
-            data-image="{{ .ImagemURL }}"
-          >
-            <td>
-              <img
-                src="{{ .ImagemURL }}"
-                alt="{{ .Nome }}"
-                class="cupcake-img"
-              />
-            </td>
-            <td>{{ .Nome }}</td>
-            <td>R$ {{ printf "%.2f" .Preco }}</td>
-            <td>{{ if .Disponivel }} Sim {{ else }} Não {{ end }}</td>
-            <td class="actions">
-              <a class="edit-btn">Editar</a>
-              <a
-                href="/lojista/cupcakes/excluir/{{ .ID }}"
-                class="delete"
-                onclick="return confirm('Tem certeza?');"
-                >Excluir</a
-              >
-            </td>
-          </tr>
-          {{ else }}
-          <tr>
-            <td colspan="5" class="empty-state">
-              Nenhum cupcake cadastrado ainda.
-            </td>
-          </tr>
-          {{ end }}
-        </tbody>
-      </table>
+      <div class="table-responsive-wrapper">
+        <table class="cupcakes-table">
+          <thead>
+            <tr>
+              <th>Imagem</th>
+              <th>Nome</th>
+              <th>Preço</th>
+              <th>Disponível</th>
+              <th>Ações</th>
+            </tr>
+          </thead>
+          <tbody>
+            {{ range .Cupcakes }}
+            <tr
+              data-id="{{ .ID }}"
+              data-name="{{ .Nome }}"
+              data-description="{{ .Descricao }}"
+              data-price="{{ .Preco }}"
+              data-available="{{ .Disponivel }}"
+              data-image="{{ .ImagemURL }}"
+            >
+              <td>
+                <img
+                  src="{{ .ImagemURL }}"
+                  alt="{{ .Nome }}"
+                  class="cupcake-img"
+                />
+              </td>
+              <td>{{ .Nome }}</td>
+              <td>R$ {{ printf "%.2f" .Preco }}</td>
+              <td>{{ if .Disponivel }} Sim {{ else }} Não {{ end }}</td>
+              <td class="actions">
+                <a class="edit-btn">Editar</a>
+                <a href="/lojista/cupcakes/excluir/{{ .ID }}" class="delete"
+                  >Excluir</a
+                >
+              </td>
+            </tr>
+            {{ else }}
+            <tr>
+              <td colspan="5" class="empty-state">
+                Nenhum cupcake cadastrado ainda.
+              </td>
+            </tr>
+            {{ end }}
+          </tbody>
+        </table>
+      </div>
     </div>
 
     <div class="modal-overlay" id="cupcakeModal">
@@ -264,9 +336,23 @@
       </div>
     </div>
 
+    <div class="modal-overlay confirm-modal" id="deleteConfirmModal">
+      <div class="modal-content">
+        <button class="close-btn" id="cancelDeleteBtn">&times;</button>
+        <h3>Confirmar Exclusão</h3>
+        <p id="deleteModalText">Tem certeza que deseja excluir este cupcake?</p>
+        <div class="confirm-actions">
+          <button id="cancelDeleteBtn2" class="btn btn-secondary">
+            Cancelar
+          </button>
+          <a href="#" id="deleteConfirmBtn" class="btn btn-danger">Excluir</a>
+        </div>
+      </div>
+    </div>
+
     <script>
       document.addEventListener("DOMContentLoaded", () => {
-        console.log("Script lojista_cupcakes.html carregado."); // Log de verificação
+        console.log("Script lojista_cupcakes.html carregado.");
         const modalOverlay = document.getElementById("cupcakeModal");
         const addBtn = document.getElementById("addCupcakeBtn");
         const closeBtn = document.getElementById("closeModalBtn");
@@ -277,18 +363,18 @@
         const modalTitle = document.getElementById("modalTitle");
 
         const openModal = () => {
-          console.log("Abrindo modal..."); // Log
+          console.log("Abrindo modal de formulário...");
           modalOverlay.style.display = "flex";
         };
         const closeModal = () => {
-          console.log("Fechando modal..."); // Log
+          console.log("Fechando modal de formulário...");
           modalOverlay.style.display = "none";
         };
 
         if (addBtn) {
-          console.log("Botão 'Adicionar' encontrado. Adicionando listener."); // Log
+          console.log("Botão 'Adicionar' encontrado.");
           addBtn.addEventListener("click", () => {
-            console.log("Botão 'Adicionar' clicado!"); // Log
+            console.log("Botão 'Adicionar' clicado!");
             modalTitle.textContent = "Adicionar Novo Cupcake";
             form.action = "/lojista/cupcakes/novo";
             form.reset();
@@ -296,20 +382,18 @@
             openModal();
           });
         } else {
-          console.error("Botão 'addCupcakeBtn' não encontrado!"); // Log de erro
+          console.error("Botão 'addCupcakeBtn' não encontrado!");
         }
 
         editBtns.forEach((btn) => {
           btn.addEventListener("click", (e) => {
-            console.log("Botão 'Editar' clicado!"); // Log
+            console.log("Botão 'Editar' clicado!");
             e.preventDefault();
 
             const row = e.target.closest("tr");
             const id = row.dataset.id;
             if (!id) {
-              console.error(
-                "Não foi possível encontrar o data-id na linha da tabela!"
-              );
+              console.error("data-id não encontrado na linha!");
               return;
             }
 
@@ -321,7 +405,7 @@
             form.preco.value = row.dataset.price || "";
             form.disponivel.checked = row.dataset.available === "true";
             document.getElementById("imagem").required = false;
-            document.getElementById("imagem").value = ""; // Limpa seleção de arquivo anterior
+            document.getElementById("imagem").value = "";
 
             openModal();
           });
@@ -333,6 +417,54 @@
           modalOverlay.addEventListener("click", (e) => {
             if (e.target === modalOverlay) closeModal();
           });
+
+        // --- LÓGICA PARA O MODAL DE EXCLUSÃO ---
+        const deleteModal = document.getElementById("deleteConfirmModal");
+        const deleteLinks = document.querySelectorAll("a.delete");
+        const cancelDeleteBtn = document.getElementById("cancelDeleteBtn");
+        const cancelDeleteBtn2 = document.getElementById("cancelDeleteBtn2");
+        const deleteConfirmBtn = document.getElementById("deleteConfirmBtn");
+        const deleteModalText = document.getElementById("deleteModalText");
+
+        if (deleteModal) {
+          // Garante que o modal existe
+          const openDeleteModal = () => {
+            console.log("Abrindo modal de exclusão...");
+            deleteModal.style.display = "flex";
+          };
+          const closeDeleteModal = () => {
+            console.log("Fechando modal de exclusão...");
+            deleteModal.style.display = "none";
+          };
+
+          deleteLinks.forEach((link) => {
+            link.addEventListener("click", (e) => {
+              console.log("Link 'Excluir' clicado!");
+              e.preventDefault(); // Impede a navegação
+
+              const deleteUrl = e.currentTarget.getAttribute("href");
+              const row = e.target.closest("tr");
+              const cupcakeName = row.dataset.name || "este item";
+
+              deleteModalText.textContent = `Tem certeza que deseja excluir o cupcake "${cupcakeName}"? Esta ação não pode ser desfeita.`;
+              deleteConfirmBtn.setAttribute("href", deleteUrl);
+
+              openDeleteModal();
+            });
+          });
+
+          if (cancelDeleteBtn)
+            cancelDeleteBtn.addEventListener("click", closeDeleteModal);
+          if (cancelDeleteBtn2)
+            cancelDeleteBtn2.addEventListener("click", closeDeleteModal);
+          deleteModal.addEventListener("click", (e) => {
+            if (e.target === deleteModal) closeDeleteModal();
+          });
+        } else {
+          console.error(
+            "Modal de confirmação 'deleteConfirmModal' não encontrado!"
+          );
+        }
       });
     </script>
   </body>

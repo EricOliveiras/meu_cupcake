@@ -1,83 +1,396 @@
 {{ define "_header.html" }}
 <header class="main-header">
-  {{/* Lógica principal: verifica se o usuário está logado */}} {{ if
-  .IsLoggedIn }} {{/* Lógica do Logo: link dinâmico */}} {{ if eq .User.Tipo
-  "cliente" }}
-  <div class="logo"><a href="/cliente/dashboard">Meu Cupcake</a></div>
-  {{ else if eq .User.Tipo "lojista" }}
-  <div class="logo"><a href="/lojista/dashboard">Meu Cupcake</a></div>
-  {{ else }}
-  <div class="logo"><a href="/">Meu Cupcake</a></div>
-  {{ end }} {{/* Navegação separada por tipo */}} {{ if eq .User.Tipo "lojista"
-  }}
-  <nav class="nav-links">
-    <a href="/logout" class="btn btn-primary">Sair</a>
-  </nav>
-  {{ else if eq .User.Tipo "cliente" }}
-  <nav class="nav-links">
-    <a href="/carrinho" class="cart-icon-link">
-      🛒 {{ if gt .CartItemCount 0 }}
+  <div class="logo">
+    {{/* Lógica do Logo: link dinâmico */}} {{ if and .IsLoggedIn (eq .User.Tipo
+    "cliente") }}<a href="/cliente/dashboard">Meu Cupcake</a> {{ else if and
+    .IsLoggedIn (eq .User.Tipo "lojista") }}<a href="/lojista/dashboard"
+      >Meu Cupcake</a
+    >
+    {{ else }}<a href="/">Meu Cupcake</a>
+    {{ end }}
+  </div>
+
+  <nav id="nav-menu" class="nav-links" aria-hidden="true">
+    {{/* Lógica Condicional ÚNICA, DENTRO da nav */}} {{ if and .IsLoggedIn (eq
+    .User.Tipo "lojista") }}
+    <a href="/lojista/dashboard">Painel</a>
+    <a href="/lojista/vendas">Vendas</a>
+    <a href="/lojista/cupcakes">Cupcakes</a>
+    <div class="nav-separator"></div>
+    {{/* Separador */}}
+    <a href="/logout" class="btn btn-primary btn-mobile">Sair</a>
+
+    {{ else if and .IsLoggedIn (eq .User.Tipo "cliente") }} {{ if ne .ActivePage
+    "vitrine" }}
+    <a href="/vitrine">Vitrine</a>
+    {{ end }}
+    <a href="/carrinho" class="cart-link">
+      <span class="cart-icon">🛒</span>
+      <span class="cart-text">Carrinho</span>
+      {{ if gt .CartItemCount 0 }}
       <span class="cart-badge">{{ .CartItemCount }}</span>
       {{ end }}
     </a>
-    {{ if ne .ActivePage "vitrine" }}<a
-      href="/vitrine"
-      class="btn btn-secondary"
-      >Vitrine</a
-    >{{ end }}
+    <a href="/cliente/dashboard">Minha Conta</a>
+    <a href="/perfil">Meu Perfil</a>
+    <div class="nav-separator"></div>
+    <a href="/logout" class="btn btn-primary btn-mobile">Sair</a>
 
-    <a href="/perfil" class="btn btn-secondary">Meu Perfil</a>
-    <a href="/logout" class="btn btn-primary">Sair</a>
-  </nav>
-  {{ else }}
-  <nav class="nav-links">
-    <a href="/logout" class="btn btn-primary">Sair</a>
-  </nav>
-  {{ end }} {{ else }}
-  <div class="logo"><a href="/">Meu Cupcake</a></div>
-
-  <nav class="nav-links">
-    {{/* --- CORREÇÃO AQUI: Adiciona classes ao link Vitrine --- */}} {{ if ne
-    .ActivePage "vitrine" }}<a href="/vitrine" class="btn btn-secondary"
-      >Vitrine</a
-    >{{ end }}
-    <a href="/carrinho" class="cart-icon-link">
-      🛒 {{ if gt .CartItemCount 0 }}
+    {{ else }} {{ if ne .ActivePage "vitrine" }}
+    <a href="/vitrine">Vitrine</a>
+    {{ end }}
+    <a href="/carrinho" class="cart-link">
+      <span class="cart-icon">🛒</span>
+      <span class="cart-text">Carrinho</span>
+      {{ if gt .CartItemCount 0 }}
       <span class="cart-badge">{{ .CartItemCount }}</span>
       {{ end }}
     </a>
-    <a href="/login" class="btn btn-secondary">Entrar</a>
-    <a href="/cadastro" class="btn btn-primary">Cadastrar</a>
+    <div class="nav-separator"></div>
+    <a href="/login" class="btn btn-secondary btn-mobile">Entrar</a>
+    <a href="/cadastro" class="btn btn-primary btn-mobile">Cadastrar</a>
+    {{ end }}
   </nav>
-  {{ end }} {{/* Fim do if .IsLoggedIn */}}
+
+  <button
+    id="hamburger-btn"
+    class="hamburger-btn"
+    aria-label="Abrir menu"
+    aria-expanded="false"
+  >
+    <span></span>
+    <span></span>
+    <span></span>
+  </button>
 </header>
 
 <style>
-  /* --- ESTILOS DO ÍCONE DO CARRINHO E BADGE --- */
-
-  .cart-icon-link {
-    position: relative; /* Necessário para posicionar o badge relativo a este link */
+  /* Estilos Base do Header */
+  .main-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1rem 1.5rem;
+    background-color: white;
+    border-bottom: 2px solid #fde2ed;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+    position: relative;
+    z-index: 100;
+  }
+  .logo a {
     text-decoration: none;
-    font-size: 1.5rem; /* Tamanho do ícone de carrinho (🛒) */
-    color: #333; /* Cor do ícone */
-    margin: 0 0.5rem; /* Espaçamento ao redor do ícone */
-    display: inline-block; /* Garante que a posição relativa funcione corretamente */
+    color: #ff69b4;
+    font-size: 1.5rem;
+    font-weight: bold;
   }
 
-  .cart-badge {
-    position: absolute; /* Posiciona o badge em relação ao .cart-icon-link */
-    top: -8px; /* Desloca o badge um pouco para cima */
-    right: -10px; /* Desloca o badge um pouco para a direita */
-    background-color: red; /* Cor de fundo da bolinha */
-    color: white; /* Cor do número dentro da bolinha */
-    border-radius: 50%; /* Faz o formato de círculo */
-    padding: 2px 6px; /* Espaçamento interno (vertical, horizontal) */
-    font-size: 0.75rem; /* Tamanho da fonte do número */
+  /* Navegação Desktop */
+  .nav-links {
+    display: flex;
+    align-items: center;
+    gap: 1.5rem;
+  }
+  .nav-links a:not(.btn) {
+    text-decoration: none;
+    color: #333;
+    font-weight: 500;
+    padding: 5px 0;
+    position: relative;
+    transition: color 0.2s ease;
+  }
+  .nav-links a:not(.btn):hover {
+    color: #ff69b4;
+  }
+
+  /* Estilos Botões Base (Seu CSS global pode já ter isso) */
+  .btn {
+    text-decoration: none;
+    padding: 8px 16px;
+    border-radius: 5px;
+    transition: background-color 0.3s, color 0.3s;
     font-weight: bold;
-    line-height: 1; /* Garante que o número fique centralizado verticalmente */
-    min-width: 10px; /* Largura mínima para garantir que a bolinha apareça mesmo com 1 dígito */
+    border: 1px solid transparent;
+    cursor: pointer;
+    display: inline-block;
+  }
+  .btn-primary {
+    background-color: #ff69b4;
+    color: white;
+    border-color: #ff69b4;
+  }
+  .btn-primary:hover {
+    background-color: #ff85c1;
+    border-color: #ff85c1;
+  }
+  .btn-secondary {
+    background-color: #6c757d;
+    color: white;
+    border-color: #6c757d;
+  }
+  .btn-secondary:hover {
+    background-color: #5a6268;
+    border-color: #5a6268;
+  }
+
+  /* Estilos Carrinho (Desktop) */
+  .cart-link {
+    position: relative;
+    text-decoration: none;
+    color: #333;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+  }
+  .cart-icon {
+    font-size: 1.5rem;
+  }
+  .cart-text {
+    display: none;
+  }
+  .cart-badge {
+    position: absolute;
+    top: -5px;
+    right: -12px;
+    background-color: red;
+    color: white;
+    border-radius: 50%;
+    padding: 2px 5px;
+    font-size: 0.7rem;
+    font-weight: bold;
+    line-height: 1;
+    min-width: 8px;
     text-align: center;
-    box-shadow: 0 0 1px 1px rgba(0, 0, 0, 0.1); /* Sombra sutil opcional */
+  }
+
+  /* Estilos Hamburger (Escondido no Desktop) */
+  .hamburger-btn {
+    display: none;
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 10px;
+    z-index: 1001;
+  }
+  .hamburger-btn span {
+    display: block;
+    width: 25px;
+    height: 3px;
+    background-color: #333;
+    margin: 5px 0;
+    transition: transform 0.3s ease, opacity 0.3s ease;
+  }
+  .hamburger-btn.is-active span:nth-child(1) {
+    transform: translateY(8px) rotate(45deg);
+  }
+  .hamburger-btn.is-active span:nth-child(2) {
+    opacity: 0;
+  }
+  .hamburger-btn.is-active span:nth-child(3) {
+    transform: translateY(-8px) rotate(-45deg);
+  }
+  .close-btn {
+    display: none;
+    position: absolute;
+    top: 1rem;
+    right: 1.5rem;
+    background: none;
+    border: none;
+    font-size: 2.5rem;
+    color: #333;
+    cursor: pointer;
+    padding: 0;
+    line-height: 1;
+  }
+
+  /* Separador para o menu mobile (inicialmente escondido) */
+  .nav-separator {
+    display: none;
+  }
+
+  /* --- MEDIA QUERY PARA TELAS MENORES (< 769px) --- */
+  @media (max-width: 768px) {
+    .main-header {
+      padding: 0.8rem 1rem;
+    }
+
+    /* Esconde a navegação desktop */
+    .nav-links:not(.is-active) {
+      display: none;
+    }
+
+    /* Estilo do menu lateral quando ATIVO */
+    .nav-links.is-active {
+      display: flex;
+      position: fixed;
+      top: 0;
+      right: 0; /* Abre da DIREITA */
+      left: auto;
+      width: 75%;
+      max-width: 320px;
+      height: 100vh;
+      background-color: #fdfdfd;
+      box-shadow: -3px 0 6px rgba(0, 0, 0, 0.1);
+      flex-direction: column;
+      align-items: stretch;
+      justify-content: flex-start;
+      padding: 5rem 1rem 2rem 1rem; /* Zera padding lateral do container */
+      gap: 0;
+      transform: translateX(0%);
+      transition: transform 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+      z-index: 1000;
+      overflow-y: auto;
+    }
+    /* Estado inicial escondido */
+    .nav-links {
+      transform: translateX(100%);
+      transition: transform 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+      position: fixed;
+      top: 0;
+      right: 0;
+      width: 75%;
+      max-width: 320px;
+      height: 100vh;
+      background-color: #fdfdfd;
+      box-shadow: -3px 0 6px rgba(0, 0, 0, 0.1);
+      flex-direction: column;
+      align-items: stretch;
+      justify-content: flex-start;
+      padding: 5rem 0 2rem 0;
+      gap: 0;
+      z-index: 1000;
+      overflow-y: auto;
+      display: flex;
+    }
+
+    /* --- CORREÇÃO AQUI --- */
+    /* Estilo dos links no menu mobile */
+    .nav-links a {
+      /* Adiciona padding na esquerda e direita para afastar da borda */
+      padding: 1rem 2.5rem;
+      border-bottom: 1px solid #eee;
+      width: 100%;
+      box-sizing: border-box;
+      display: block;
+      font-size: 1.1rem; /* Fonte elegante */
+      font-weight: 500; /* Peso normal para links de navegação */
+      color: #444; /* Cor de texto suave */
+      letter-spacing: 0.5px; /* Espaçamento leve entre letras */
+    }
+    .nav-links a:last-of-type {
+      border-bottom: 1px solid #eee; /* Garante que o último item também tenha borda antes do separador */
+    }
+    .nav-links a:not(.btn-mobile):hover {
+      color: #ff69b4;
+      background-color: #fce4ef; /* Rosa claro no hover */
+      padding-left: 3rem; /* Efeito sutil de indentação no hover */
+      transition: padding-left 0.2s ease, background-color 0.2s ease,
+        color 0.2s ease;
+    }
+    /* --- FIM DA CORREÇÃO --- */
+
+    .hamburger-btn {
+      display: block;
+    } /* Mostra hamburger */
+    .close-btn {
+      display: block;
+    } /* Mostra botão fechar */
+
+    /* Estilo botões no menu mobile */
+    .nav-links .btn-mobile {
+      /* Renomeado para evitar conflito com .btn */
+      display: block;
+      width: calc(100% - 5rem); /* Largura total menos o padding (2.5rem * 2) */
+      margin: 1.5rem 2.5rem 0 2.5rem; /* Margem centralizada */
+      text-align: center;
+      padding-top: 12px;
+      padding-bottom: 12px;
+      font-size: 1.1rem;
+    }
+
+    /* Mostra o separador no mobile */
+    .nav-separator {
+      display: block;
+      border-top: 1px solid #ddd; /* Linha mais escura */
+      margin: 1rem 0;
+    }
+
+    /* --- AJUSTE CARRINHO NO MOBILE --- */
+    .nav-links .cart-link {
+      margin: 0;
+      border-bottom: 1px solid #eee;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      position: relative;
+    }
+    .nav-links .cart-icon {
+      display: none;
+    }
+    .nav-links .cart-text {
+      display: inline;
+      font-weight: 500;
+    }
+    .nav-links .cart-badge {
+      position: static;
+      margin-left: 0.5rem;
+      transform: translateY(-2px);
+      top: auto;
+      right: auto;
+    }
   }
 </style>
-{{ end }} {{/* Fim do define "_header.html" */}}
+
+<script>
+  document.addEventListener("DOMContentLoaded", () => {
+    const hamburgerBtn = document.getElementById("hamburger-btn");
+    const navMenu = document.getElementById("nav-menu");
+    const closeBtn = document.getElementById("close-btn");
+
+    if (hamburgerBtn && navMenu) {
+      hamburgerBtn.addEventListener("click", () => {
+        const isActive = navMenu.classList.toggle("is-active");
+        hamburgerBtn.classList.toggle("is-active");
+        hamburgerBtn.setAttribute("aria-expanded", isActive);
+        navMenu.setAttribute("aria-hidden", !isActive);
+        document.body.style.overflow = isActive ? "hidden" : "";
+      });
+    }
+
+    if (closeBtn && navMenu) {
+      closeBtn.addEventListener("click", () => {
+        navMenu.classList.remove("is-active");
+        hamburgerBtn.classList.remove("is-active");
+        hamburgerBtn.setAttribute("aria-expanded", "false");
+        navMenu.setAttribute("aria-hidden", "true");
+        document.body.style.overflow = "";
+      });
+    }
+
+    const navLinks = navMenu.querySelectorAll("a");
+    navLinks.forEach((link) => {
+      link.addEventListener("click", () => {
+        if (
+          window.innerWidth <= 768 &&
+          navMenu.classList.contains("is-active")
+        ) {
+          navMenu.classList.remove("is-active");
+          hamburgerBtn.classList.remove("is-active");
+          hamburgerBtn.setAttribute("aria-expanded", "false");
+          navMenu.setAttribute("aria-hidden", "true");
+          document.body.style.overflow = "";
+        }
+      });
+    });
+
+    window.addEventListener("resize", () => {
+      if (window.innerWidth > 768 && navMenu.classList.contains("is-active")) {
+        navMenu.classList.remove("is-active");
+        hamburgerBtn.classList.remove("is-active");
+        hamburgerBtn.setAttribute("aria-expanded", "false");
+        navMenu.setAttribute("aria-hidden", "true");
+        document.body.style.overflow = "";
+      }
+    });
+  });
+</script>
+{{ end }}

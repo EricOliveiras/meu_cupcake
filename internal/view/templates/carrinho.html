@@ -9,6 +9,8 @@
       .container {
         max-width: 900px;
         margin: 2rem auto;
+        padding: 0 1rem; /* Adiciona padding lateral em telas menores */
+        box-sizing: border-box;
       }
       .cart-table {
         width: 100%;
@@ -16,12 +18,12 @@
         background-color: white;
         box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
         border-radius: 8px;
-        overflow: hidden;
-        margin-bottom: 2rem;
+        /* overflow: hidden; */ /* Removido daqui */
+        margin-bottom: 0; /* Removido daqui, vai para o wrapper */
       }
       .cart-table th,
       .cart-table td {
-        padding: 15px;
+        padding: 12px 15px; /* Reduzido padding */
         border-bottom: 1px solid #ddd;
         text-align: left;
         vertical-align: middle;
@@ -31,11 +33,11 @@
         font-weight: bold;
       }
       .cart-item-img {
-        width: 80px;
-        height: 80px;
+        width: 60px; /* Reduzido */
+        height: 60px; /* Reduzido */
         object-fit: cover;
         border-radius: 5px;
-        margin-right: 15px;
+        margin-right: 10px; /* Reduzido */
       }
       .item-details {
         display: flex;
@@ -53,15 +55,16 @@
         background-color: #eee;
         border: 1px solid #ccc;
         color: #333;
-        width: 30px;
-        height: 30px;
+        width: 28px;
+        height: 28px; /* Reduzido */
         border-radius: 4px;
         cursor: pointer;
-        font-size: 1.2rem;
+        font-size: 1.1rem; /* Ajustado */
         line-height: 1;
         display: flex;
         align-items: center;
         justify-content: center;
+        padding: 0;
       }
       .quantity-btn:hover {
         background-color: #ddd;
@@ -79,7 +82,7 @@
         border: none;
         color: #dc3545;
         cursor: pointer;
-        font-size: 1.5rem;
+        font-size: 1.4rem;
         padding: 0;
         line-height: 1;
       }
@@ -91,6 +94,7 @@
         padding: 2rem;
         border-radius: 8px;
         box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        margin-top: 2rem; /* Adiciona espaço acima */
       }
       .summary-header {
         display: flex;
@@ -147,6 +151,58 @@
         background-color: #f8d7da;
         border-color: #f5c6cb;
       }
+
+      /* --- RESPONSIVIDADE PARA TABELA --- */
+      .table-responsive-wrapper {
+        overflow-x: auto; /* Habilita a rolagem horizontal */
+        -webkit-overflow-scrolling: touch; /* Melhora rolagem iOS */
+        width: 100%; /* Garante que o wrapper ocupe a largura disponível */
+        margin-bottom: 2rem; /* Mantém o espaço abaixo */
+        border-radius: 8px; /* Arredonda o wrapper */
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1); /* Sombra no wrapper */
+        background-color: white; /* Fundo branco no wrapper */
+      }
+      .cart-table {
+        min-width: 650px; /* Força rolagem em telas < 650px */
+        margin-bottom: 0; /* Remove margem da tabela */
+        box-shadow: none; /* Remove sombra da tabela */
+        border-radius: 0; /* Remove bordas da tabela */
+        overflow: visible; /* Garante que o conteúdo não seja cortado incorretamente */
+      }
+      .cart-table td:nth-child(2) .item-name {
+        white-space: normal;
+        min-width: 150px;
+      }
+      @media (max-width: 768px) {
+        .cart-table th:nth-child(3),
+        .cart-table td:nth-child(3),
+        .cart-table th:nth-child(4),
+        .cart-table td:nth-child(4),
+        .cart-table th:nth-child(5),
+        .cart-table td:nth-child(5),
+        .cart-table th:nth-child(6),
+        .cart-table td:nth-child(6) {
+          text-align: center;
+          padding-left: 8px;
+          padding-right: 8px; /* Menor padding lateral */
+        }
+        .quantity-controls {
+          justify-content: center;
+        }
+        .cart-table th,
+        .cart-table td {
+          font-size: 0.9em;
+        } /* Reduz fonte geral */
+        .item-name {
+          font-size: 1em;
+        } /* Mantém nome um pouco maior */
+        .cart-item-img {
+          width: 50px;
+          height: 50px;
+          margin-right: 8px;
+        } /* Imagem menor */
+      }
+      /* --- FIM RESPONSIVIDADE --- */
     </style>
   </head>
   <body>
@@ -169,64 +225,65 @@
       <h1>Meu Carrinho</h1>
 
       {{ if .Items }}
-      <table class="cart-table">
-        <thead>
-          <tr>
-            <th colspan="2">Produto</th>
-            <th>Preço Unitário</th>
-            <th>Quantidade</th>
-            <th>Subtotal</th>
-            <th>Remover</th>
-          </tr>
-        </thead>
-        <tbody>
-          {{ range .Items }}
-          <tr>
-            <td>
-              <img
-                src="{{ .Cupcake.ImagemURL }}"
-                alt="{{ .Cupcake.Nome }}"
-                class="cart-item-img"
-              />
-            </td>
-            <td><span class="item-name">{{ .Cupcake.Nome }}</span></td>
-            <td>R$ {{ printf "%.2f" .Cupcake.Preco }}</td>
-            <td>
-              <div class="quantity-controls">
+      <div class="table-responsive-wrapper">
+        <table class="cart-table">
+          <thead>
+            <tr>
+              <th colspan="2">Produto</th>
+              <th>Preço Unit.</th>
+              <th>Qtd.</th>
+              <th>Subtotal</th>
+              <th>Remover</th>
+            </tr>
+          </thead>
+          <tbody>
+            {{ range .Items }}
+            <tr>
+              <td>
+                <img
+                  src="{{ .Cupcake.ImagemURL }}"
+                  alt="{{ .Cupcake.Nome }}"
+                  class="cart-item-img"
+                />
+              </td>
+              <td><span class="item-name">{{ .Cupcake.Nome }}</span></td>
+              <td>R$ {{ printf "%.2f" .Cupcake.Preco }}</td>
+              <td>
+                <div class="quantity-controls">
+                  <form
+                    action="/carrinho/diminuir/{{ .Cupcake.ID }}"
+                    method="POST"
+                    style="margin: 0"
+                  >
+                    <input type="hidden" name="return_to" value="cart" />
+                    <button type="submit" class="quantity-btn">-</button>
+                  </form>
+                  <span class="quantity-display">{{ .Quantity }}</span>
+                  <form
+                    action="/carrinho/adicionar/{{ .Cupcake.ID }}"
+                    method="POST"
+                    style="margin: 0"
+                  >
+                    <input type="hidden" name="return_to" value="cart" />
+                    <button type="submit" class="quantity-btn">+</button>
+                  </form>
+                </div>
+              </td>
+              <td>R$ {{ printf "%.2f" .Subtotal }}</td>
+              <td class="remove-cell">
                 <form
-                  action="/carrinho/diminuir/{{ .Cupcake.ID }}"
+                  action="/carrinho/remover/{{ .Cupcake.ID }}"
                   method="POST"
-                  style="margin: 0"
+                  class="remove-form"
                 >
-                  <input type="hidden" name="return_to" value="cart" />
-                  <button type="submit" class="quantity-btn">-</button>
+                  <button type="submit">&times;</button>
                 </form>
-                <span class="quantity-display">{{ .Quantity }}</span>
-                <form
-                  action="/carrinho/adicionar/{{ .Cupcake.ID }}"
-                  method="POST"
-                  style="margin: 0"
-                >
-                  <input type="hidden" name="return_to" value="cart" />
-                  <button type="submit" class="quantity-btn">+</button>
-                </form>
-              </div>
-            </td>
-            <td>R$ {{ printf "%.2f" .Subtotal }}</td>
-            <td class="remove-cell">
-              <form
-                action="/carrinho/remover/{{ .Cupcake.ID }}"
-                method="POST"
-                class="remove-form"
-              >
-                <button type="submit">&times;</button>
-              </form>
-            </td>
-          </tr>
-          {{ end }}
-        </tbody>
-      </table>
-
+              </td>
+            </tr>
+            {{ end }}
+          </tbody>
+        </table>
+      </div>
       <div class="cart-summary">
         <div class="summary-header">
           <div class="total">
@@ -241,7 +298,12 @@
         <a
           href="/cliente/checkout"
           class="btn btn-primary"
-          style="width: 100%; text-align: center"
+          style="
+            display: block;
+            width: 100%;
+            text-align: center;
+            box-sizing: border-box;
+          "
         >
           Finalizar Compra
         </a>

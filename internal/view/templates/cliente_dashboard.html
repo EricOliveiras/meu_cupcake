@@ -2,10 +2,21 @@
 <html lang="pt-br">
   <head>
     <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
     <title>Minha Conta - Meu Cupcake</title>
     <link rel="stylesheet" href="/static/css/style.css" />
 
     <style>
+      /* --- CORREÇÃO AQUI --- */
+      .container {
+        max-width: 800px;
+        margin: 2rem auto;
+        padding: 0 1rem; /* Adiciona padding lateral para telas pequenas */
+        box-sizing: border-box; /* Garante que o padding não aumente a largura */
+      }
+      /* --- FIM DA CORREÇÃO --- */
+
       .dashboard-content {
         background-color: white;
         padding: 2rem;
@@ -26,6 +37,22 @@
         background-color: #f0f0f0;
         color: #ff69b4;
       }
+      /* Opcional: Ajuste para telas pequenas */
+      @media (max-width: 768px) {
+        .container {
+          margin-top: 1rem;
+          margin-bottom: 1rem;
+        }
+        h1 {
+          font-size: 1.8rem;
+        }
+        .dashboard-content {
+          padding: 1.5rem;
+        }
+        .dashboard-links a {
+          font-size: 1.1rem;
+        }
+      }
     </style>
   </head>
   <body>
@@ -38,7 +65,7 @@
 
         <div class="dashboard-links">
           <a href="/vitrine">Ver a Vitrine</a>
-          <a href="/cliente/pedidos">Meus Pedidos</a> </div>
+          <a href="/cliente/pedidos">Meus Pedidos</a>
         </div>
       </div>
     </div>

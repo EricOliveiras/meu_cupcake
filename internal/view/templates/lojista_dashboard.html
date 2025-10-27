@@ -2,10 +2,18 @@
 <html lang="pt-br">
   <head>
     <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Dashboard do Lojista</title>
     <link rel="stylesheet" href="/static/css/style.css" />
 
     <style>
+      /* --- 2. CONTAINER AJUSTADO --- */
+      .container {
+        max-width: 800px;
+        margin: 2rem auto;
+        padding: 0 1rem; /* Padding lateral para mobile */
+        box-sizing: border-box;
+      }
       .dashboard-content {
         background-color: white;
         padding: 2rem;
@@ -17,8 +25,34 @@
         display: flex;
         gap: 1.5rem;
         justify-content: center;
-        flex-wrap: wrap;
+        flex-wrap: wrap; /* Mantém o wrap para telas de tablet */
         margin-top: 2rem;
+      }
+      /* Garante que os botões (tags <a> com classe .btn) sejam estilizados */
+      .dashboard-actions a.btn {
+        text-decoration: none; /* Garante que o link pareça um botão */
+      }
+
+      /* --- 3. ADICIONADA MEDIA QUERY PARA RESPONSIVIDADE --- */
+      @media (max-width: 768px) {
+        .container {
+          margin-top: 1rem;
+          margin-bottom: 1rem;
+        }
+        h1 {
+          font-size: 1.8rem;
+        }
+        .dashboard-content {
+          padding: 1.5rem;
+        }
+        .dashboard-actions {
+          flex-direction: column; /* Empilha os botões verticalmente */
+          gap: 1rem; /* Reduz o espaço entre eles */
+        }
+        .dashboard-actions a.btn {
+          width: 100%; /* Faz botões ocuparem 100% da largura */
+          box-sizing: border-box; /* Garante que o padding não quebre o layout */
+        }
       }
     </style>
   </head>
