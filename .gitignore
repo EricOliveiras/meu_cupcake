@@ -17,7 +17,7 @@
 /out/
 
 # Cache do Go
-/go.sum
+
 *.log
 *.tmp
 *.cache
@@ -82,5 +82,4 @@ coverage.html
 # ============================
 # Uploads e arquivos gerados
 # ============================
-/uploads/
 /generated/
