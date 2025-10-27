@@ -1,3 +1,4 @@
+// /internal/database/database.go
 package database
 
 import (
@@ -14,22 +15,26 @@ var DB *gorm.DB
 
 func ConnectDB() {
 	var err error
-	dsn := fmt.Sprintf("host=%s user=%s password=%s dbname=%s port=%s sslmode=disable TimeZone=America/Sao_Paulo",
-		os.Getenv("DB_HOST"),
-		os.Getenv("DB_USER"),
-		os.Getenv("DB_PASSWORD"),
-		os.Getenv("DB_NAME"),
-		os.Getenv("DB_PORT"),
-	)
 
+	// Lê a URL completa do ambiente
+	dsn := os.Getenv("DATABASE_URL")
+	if dsn == "" {
+		log.Fatal("DATABASE_URL não encontrado no .env")
+	}
+
+	// Tenta abrir a conexão com GORM usando a URL completa
 	DB, err = gorm.Open(postgres.Open(dsn), &gorm.Config{})
 	if err != nil {
-		log.Fatal("Falha ao conectar ao banco de dados:", err)
+		log.Fatalf("Falha ao conectar ao banco de dados Neon usando URL: %v\nURL usada: %s", err, dsn)
 	}
-	fmt.Println("Conexão com o banco de dados estabelecida com sucesso.")
 
+	fmt.Println("Conexão com o banco de dados Neon (via URL) estabelecida com sucesso.")
+
+	// --- Auto Migration  ---
 	fmt.Println("Executando migrações do banco de dados...")
-	err = DB.AutoMigrate(&model.Usuario{}, &model.Cupcake{}, &model.Order{}, &model.ItemOrder{})
+	err = DB.AutoMigrate(
+		&model.Usuario{}, &model.Cupcake{}, &model.Order{}, &model.ItemOrder{},
+	)
 	if err != nil {
 		log.Fatal("Falha ao executar migrações:", err)
 	}
