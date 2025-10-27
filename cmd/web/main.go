@@ -3,6 +3,7 @@ package main
 
 import (
 	"encoding/gob"
+	"fmt" // Import fmt para logs não-fatais
 	"log"
 	"os"
 
@@ -20,37 +21,58 @@ var store *sessions.CookieStore
 func main() {
 	gob.Register(map[uint]int{})
 
+	// --- CORREÇÃO AQUI ---
+	// Tenta carregar o .env, mas não falha se não existir
 	err := godotenv.Load()
 	if err != nil {
-		log.Fatal("Erro ao carregar o arquivo .env")
+		// Apenas loga um aviso em vez de encerrar
+		fmt.Println("Aviso: Erro ao carregar o arquivo .env:", err)
+		fmt.Println("Continuando execução, esperando variáveis de ambiente do sistema/segredos.")
+	} else {
+		fmt.Println("Arquivo .env carregado com sucesso.")
 	}
+	// ----------------------
 
 	mpAccessToken := os.Getenv("MP_ACCESS_TOKEN")
 	if mpAccessToken == "" {
-		log.Fatal("MP_ACCESS_TOKEN não encontrado no .env")
+		// Mantém Fatal aqui, pois sem token MP não funciona
+		log.Fatal("FATAL: MP_ACCESS_TOKEN não encontrado no ambiente.")
 	}
-
-	// Cria a configuração e armazena em 'cfg'
 	cfg, err := config.New(mpAccessToken)
 	if err != nil {
 		log.Fatalf("Erro ao criar configuração do Mercado Pago: %v", err)
 	}
+	log.Println("SDK do Mercado Pago v2 configurado...")
 
-	store = sessions.NewCookieStore([]byte(os.Getenv("SESSION_SECRET")))
+	sessionSecret := os.Getenv("SESSION_SECRET") // Lê a chave da sessão
+	if sessionSecret == "" {
+		log.Fatal("FATAL: SESSION_SECRET não encontrado no ambiente.")
+	}
+	store = sessions.NewCookieStore([]byte(sessionSecret)) // Usa a chave lida
 
-	// Cria instâncias dos handlers, passando dependências necessárias
+	// Cria instâncias dos handlers
 	authHandler := &handler.AuthHandler{Store: store}
 	homeHandler := &handler.HomeHandler{Store: store}
 	lojistaHandler := &handler.LojistaHandler{Store: store}
 	cartHandler := &handler.CartHandler{Store: store, MPCfg: cfg}
 
+	// Conecta ao DB (ConnectDB deve ler DATABASE_URL do ambiente)
 	database.ConnectDB()
-	database.SeedLojista()
+	database.SeedLojista() // Opcional no deploy, pode remover se não quiser rodar sempre
 
 	router := gin.Default()
-	router.LoadHTMLGlob("internal/view/templates/*")
 
-	// Servir arquivos estáticos
+	// Configura GIN_MODE (lendo do ambiente ou padrão)
+	ginMode := os.Getenv("GIN_MODE")
+	if ginMode == "release" {
+		gin.SetMode(gin.ReleaseMode)
+	} else {
+		gin.SetMode(gin.DebugMode)
+	}
+
+	router.LoadHTMLGlob("internal/view/templates/*") // Caminho dentro do container
+
+	// Servir arquivos estáticos (caminhos dentro do container)
 	router.Static("/uploads", "./uploads")
 	router.Static("/static", "./static")
 
@@ -65,13 +87,13 @@ func main() {
 	router.GET("/pagamento/sucesso", homeHandler.ShowPagamentoSucessoPage)
 
 	// --- Rotas de Autenticação ---
-	router.GET("/cadastro", authHandler.ShowCadastroPage)
-	router.POST("/cadastro", authHandler.ProcessCadastroForm)
+	router.GET("/cadastro", authHandler.ShowCadastroPage)     // Assumindo método
+	router.POST("/cadastro", authHandler.ProcessCadastroForm) // Assumindo método
 	router.GET("/login", authHandler.ShowLoginPage)
 	router.POST("/login", authHandler.ProcessLoginForm)
 	router.GET("/logout", authHandler.Logout)
 
-	// --- Rotas Protegidas Gerais (qualquer usuário logado) ---
+	// --- Rotas Protegidas Gerais ---
 	protected := router.Group("/")
 	protected.Use(authHandler.AuthRequired())
 	{
@@ -97,15 +119,20 @@ func main() {
 		lojistaRoutes.GET("/cupcakes", lojistaHandler.ShowCupcakesPage)
 		lojistaRoutes.POST("/cupcakes/novo", lojistaHandler.ProcessNewCupcakeForm)
 		lojistaRoutes.POST("/cupcakes/editar/:id", lojistaHandler.ProcessEditCupcakeForm)
-		lojistaRoutes.GET("/cupcakes/exclu</strong>ir/:id", lojistaHandler.DeleteCupcake)
+		lojistaRoutes.GET("/cupcakes/excluir/:id", lojistaHandler.DeleteCupcake)
 		lojistaRoutes.GET("/vendas", lojistaHandler.ShowLojistaVendasPage)
 	}
 
 	// --- Inicialização do Servidor ---
 	port := os.Getenv("PORT")
 	if port == "" {
-		port = "8080"
+		port = "8080" // Padrão
 	}
-	log.Printf("Servidor rodando na porta %s", port)
-	router.Run(":" + port)
+	// Importante para Fly.io: Ouvir em 0.0.0.0
+	listenAddr := fmt.Sprintf("0.0.0.0:%s", port)
+	log.Printf("Servidor rodando em %s (Modo Gin: %s)", listenAddr, gin.Mode())
+	err = router.Run(listenAddr) // Usa listenAddr
+	if err != nil {
+		log.Fatalf("Falha ao iniciar o servidor Gin: %v", err)
+	}
 }
