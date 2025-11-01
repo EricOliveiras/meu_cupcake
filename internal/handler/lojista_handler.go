@@ -13,12 +13,14 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
 	"github.com/gorilla/sessions"
+	"github.com/mercadopago/sdk-go/pkg/config"
 )
 
 const defaultCupcakeImage = "/static/images/placeholder.png"
 
 type LojistaHandler struct {
 	Store *sessions.CookieStore
+	MPCfg *config.Config
 }
 
 // getSessionData é uma função helper para buscar os dados do usuário da sessão.
