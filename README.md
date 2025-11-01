@@ -41,7 +41,7 @@ A aplicação está hospedada e pode ser acessada através do seguinte link:
 
 ## 🧪 Instruções para Teste e Feedback
 
-**O objetivo é coletar feedback sobre a usabilidade, funcionalidade e possíveis bugs da aplicação, conforme solicitado na Situação-Problema 3 do Projeto Integrador. Por favor, siga os passos abaixo:**
+[cite_start]**O objetivo é coletar feedback sobre a usabilidade, funcionalidade e possíveis bugs da aplicação, conforme solicitado na Situação-Problema 3 do Projeto Integrador[cite: 471]. Por favor, siga os passos abaixo:**
 
 1.  **Acesse a Aplicação:** Utilize o link fornecido acima.
 2.  **Crie uma Conta:** Clique em "Cadastrar" e crie uma conta de **cliente** com seu e-mail (ou um e-mail fictício válido) e uma senha.
@@ -59,11 +59,13 @@ A aplicação está hospedada e pode ser acessada através do seguinte link:
         - Validade: Qualquer data futura (ex: `11/30`)
         - CVV: `123`
         - Nome: "APRO"
+        - CPF: "12345678909"
       - **Cartão Recusado (Outros Erros):**
         - Número: `5031 4332 1540 6351`
         - Validade: Qualquer data futura (ex: `11/30`)
         - CVV: `123`
-        - Nome: "FUND", "CONT", ou "CONT"
+        - Nome: "FUND", "CONT", ou "FORM"
+        - CPF: "12345678909"
     - Preencha os demais campos (Nome no Cartão, CPF, etc.) com dados fictícios válidos.
     - Clique em "Pagar Agora". Você deverá ser redirecionado para a página de sucesso (se usar o cartão aprovado).
 5.  **Verifique o Histórico:** Após um pagamento aprovado, acesse "Minha Conta" (no menu do cabeçalho) > "Meus Pedidos" para ver se o pedido aparece com o status correto.
@@ -74,14 +76,14 @@ A aplicação está hospedada e pode ser acessada através do seguinte link:
       - Senha: `senhaforte123`
     - Explore as opções: "Gerenciar Cupcakes" (adicione/edite/exclua) e "Histórico de Vendas".
 7.  **Responda ao Formulário de Feedback:** Por favor, acesse o link abaixo e responda ao questionário com suas impressões, bugs encontrados e sugestões. Seu feedback é muito importante!
-    - **Link do Formulário Google:** `[INSIRA O LINK DO SEU GOOGLE FORMS AQUI]`
+    - **Link do Formulário Google:** [https://docs.google.com/forms/d/e/1FAIpQLSdpEJKlOypCjiigvD56hUZFRlh3SiHu5GVGFEtTjLveyJKksA/viewform?usp=dialog](https://docs.google.com/forms/d/e/1FAIpQLSdpEJKlOypCjiigvD56hUZFRlh3SiHu5GVGFEtTjLveyJKksA/viewform?usp=dialog)
 
 **Formato do Feedback (Conforme Projeto Integrador):**
 Ao preencher o formulário, por favor, detalhe:
 
-- O que você testou e funcionou bem.
-- O que você testou e não funcionou (descreva o problema e, se possível, os passos para reproduzi-lo).
-- Quaisquer funcionalidades que você esperava e não encontrou, ou sugestões de melhoria.
+- [cite_start]O que você testou e funcionou bem[cite: 514].
+- [cite_start]O que você testou e não funcionou (descreva o problema e, se possível, os passos para reproduzi-lo)[cite: 515].
+- [cite_start]Quaisquer funcionalidades que você esperava e não encontrou, ou sugestões de melhoria[cite: 516].
 
 Muito obrigado pela sua colaboração!
 
