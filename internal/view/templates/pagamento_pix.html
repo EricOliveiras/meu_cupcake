@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Pagar Pedido #{{ .Pedido.ID }}</title>
+    <link rel="stylesheet" href="/static/css/style.css" />
+    <style>
+      .container {
+        max-width: 500px;
+        margin: 2rem auto;
+        padding: 0 1rem;
+      }
+      .pix-content {
+        background-color: white;
+        border-radius: 8px;
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        text-align: center;
+        padding: 2rem;
+      }
+      .pix-content h2 {
+        color: #333;
+        margin-top: 0;
+      }
+      .pix-content p {
+        color: #555;
+        line-height: 1.6;
+        font-size: 1rem;
+      }
+      #pixQrCodeImg {
+        max-width: 280px;
+        width: 100%;
+        height: 280px;
+        border: 1px solid #ccc;
+        margin: 1rem auto;
+        display: block;
+      }
+      #pixCopiaECola {
+        width: 100%;
+        padding: 10px;
+        box-sizing: border-box;
+        border: 1px dashed #ff69b4;
+        background-color: #fdf6f9;
+        font-family: monospace;
+        font-size: 0.9rem;
+        margin-top: 1rem;
+        word-break: break-all;
+        resize: none;
+      }
+      .total {
+        font-size: 1.5rem;
+        font-weight: bold;
+        margin-top: 1.5rem;
+      }
+      .total span {
+        color: #ff69b4;
+      }
+
+      @media (max-width: 768px) {
+        .container {
+          margin: 1rem;
+        }
+        .pix-content {
+          padding: 1.5rem;
+        }
+        h2 {
+          font-size: 1.5rem;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    {{ template "_header.html" . }}
+
+    <div class="container">
+      <div class="pix-content">
+        <h2>Finalize seu Pagamento PIX</h2>
+        <p>
+          Para pagar o Pedido #{{ .Pedido.ID }}, escaneie o QR Code ou use o
+          "Copia e Cola" no seu app do banco.
+        </p>
+        <p>
+          <strong>Total:</strong>
+          <span class="total">R$ {{ printf "%.2f" .Total }}</span>
+        </p>
+
+        <img
+          src="data:image/png;base64,{{ .QrCodeBase64 }}"
+          alt="QR Code PIX"
+          id="pixQrCodeImg"
+        />
+
+        <label
+          for="pixCopiaECola"
+          style="font-weight: bold; margin-top: 1rem; display: block"
+          >PIX Copia e Cola:</label
+        >
+
+        <textarea id="pixCopiaECola" rows="4" readonly></textarea>
+
+        <p style="font-weight: bold; margin-top: 1.5rem">
+          Aguardando pagamento...
+        </p>
+        <a
+          href="/cliente/pedidos"
+          class="btn btn-secondary"
+          style="margin-top: 1rem"
+          >Voltar para Meus Pedidos</a
+        >
+      </div>
+    </div>
+
+    <script>
+      document.addEventListener("DOMContentLoaded", () => {
+        const pixTextArea = document.getElementById("pixCopiaECola");
+
+        const pixCode = `{{ printf "%s" .QrCodeCopiaECola }}`;
+
+        if (pixTextArea && pixCode) {
+          pixTextArea.value = pixCode;
+        }
+      });
+    </script>
+  </body>
+</html>
