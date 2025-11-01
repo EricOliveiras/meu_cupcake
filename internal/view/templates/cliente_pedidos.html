@@ -9,7 +9,6 @@
       .container {
         max-width: 900px;
         margin: 2rem auto;
-        /* --- 2. ADICIONADO PADDING LATERAL E BOX-SIZING --- */
         padding: 0 1rem;
         box-sizing: border-box;
       }
@@ -27,8 +26,8 @@
         border-bottom: 1px solid #eee;
         padding-bottom: 1rem;
         margin-bottom: 1rem;
-        flex-wrap: wrap; /* Mantém o wrap para telas médias */
-        gap: 0.5rem 1rem; /* Espaçamento vertical e horizontal */
+        flex-wrap: wrap;
+        gap: 0.5rem 1rem;
       }
       .pedido-header span {
         font-size: 0.9em;
@@ -40,7 +39,7 @@
         border-radius: 15px;
         color: white;
         font-size: 0.85em;
-        flex-shrink: 0; /* Impede que o status encolha */
+        flex-shrink: 0;
       }
       .status-pendente {
         background-color: #ffc107;
@@ -68,11 +67,11 @@
       .item-info {
         flex-grow: 1;
         font-size: 0.9em;
-        word-break: break-word; /* Garante que nomes longos quebrem */
+        word-break: break-word;
       }
       .item-subtotal {
         font-weight: bold;
-        padding-left: 1rem; /* Adiciona espaço */
+        padding-left: 1rem;
       }
       .pedido-total {
         text-align: right;
@@ -90,8 +89,13 @@
         box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
         color: #777;
       }
+      .actions {
+        /* Estilo para o botão Pagar PIX */
+        text-align: right;
+        margin-top: 1rem;
+      }
 
-      /* --- 3. ADICIONADA MEDIA QUERY PARA RESPONSIVIDADE --- */
+      /* Media Query (Correta) */
       @media (max-width: 768px) {
         .container {
           margin-top: 1rem;
@@ -101,25 +105,30 @@
           font-size: 1.8rem;
         }
         .pedido-card {
-          padding: 1rem; /* Menos padding no card */
+          padding: 1rem;
         }
         .pedido-header {
-          flex-direction: column; /* Empilha os itens do cabeçalho */
-          align-items: flex-start; /* Alinha à esquerda */
-          gap: 0.5rem; /* Espaçamento entre os itens empilhados */
-          margin-bottom: 1.5rem; /* Mais espaço abaixo do header */
+          flex-direction: column;
+          align-items: flex-start;
+          gap: 0.5rem;
+          margin-bottom: 1.5rem;
         }
         .pedido-item {
-          align-items: flex-start; /* Alinha imagem e texto no topo */
+          align-items: flex-start;
         }
         .item-info {
-          font-size: 1em; /* Fonte um pouco maior para leitura no mobile */
+          font-size: 1em;
         }
         .pedido-total {
           font-size: 1.2em;
         }
+        .actions .btn {
+          /* Botão Pagar PIX 100% no mobile */
+          width: 100%;
+          box-sizing: border-box;
+          text-align: center;
+        }
       }
-      /* --- FIM DA CORREÇÃO --- */
     </style>
   </head>
   <body>
@@ -130,7 +139,7 @@
 
       {{ if .ErrorMsg }}
       <p style="color: red; text-align: center">{{ .ErrorMsg }}</p>
-      {{ end }} {{ if .Pedidos }} {{ range .Pedidos }}
+      {{ end }} {{ if gt (len .Pedidos) 0 }} {{ range .Pedidos }}
       <div class="pedido-card">
         <div class="pedido-header">
           <span>Pedido #{{ .ID }}</span>
@@ -152,6 +161,15 @@
         </div>
         {{ end }}
         <div class="pedido-total">Total: R$ {{ printf "%.2f" .Total }}</div>
+
+        {{/* Link Pagar PIX (que adicionamos antes) */}} {{ if and (eq .Status
+        "pendente") (eq .MetodoPagamento "pix") }}
+        <div class="actions">
+          <a href="/cliente/pedido/pagamento/{{ .ID }}" class="btn btn-primary"
+            >Pagar PIX</a
+          >
+        </div>
+        {{ end }}
       </div>
       {{ end }} {{ else }}
       <div class="empty-state">
