@@ -102,8 +102,7 @@
         border: 1px solid #ccc;
         padding: 8px 12px;
         border-radius: 4px;
-        /* height: 20px; */ /* Removido 'height' fixo para melhor adaptação */
-        height: 20px; /* Usa min-height se necessário */
+        height: 20px; /* Usa min-height */
       }
 
       /* --- Estilos da Barra de Progresso --- */
@@ -144,7 +143,105 @@
         }
       }
 
-      /* --- CORREÇÃO DE RESPONSIVIDADE ADICIONADA --- */
+      /* --- NOVOS ESTILOS PARA AS ABAS DE PAGAMENTO --- */
+      .payment-methods {
+        display: flex;
+        border-bottom: 2px solid #eee;
+        margin-bottom: 1.5rem;
+      }
+      .payment-method-tab {
+        padding: 10px 20px;
+        cursor: pointer;
+        font-weight: 600;
+        color: #888;
+        border-bottom: 3px solid transparent;
+        margin-bottom: -2px; /* Alinha com a borda principal */
+      }
+      .payment-method-tab.active {
+        color: #ff69b4;
+        border-bottom-color: #ff69b4;
+      }
+      .payment-content {
+        display: none; /* Esconde conteúdo por padrão */
+      }
+      .payment-content.active {
+        display: block; /* Mostra conteúdo da aba ativa */
+      }
+
+      /* --- NOVOS ESTILOS PARA O MODAL DO PIX --- */
+      .modal-overlay {
+        /* Estilo genérico para todos os modais */
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background-color: rgba(0, 0, 0, 0.7);
+        display: none;
+        justify-content: center;
+        align-items: center;
+        z-index: 1000;
+      }
+      .pix-modal-content {
+        background-color: white;
+        border-radius: 8px;
+        width: 90%;
+        max-width: 400px; /* Modal de PIX pode ser menor */
+        position: relative;
+        box-sizing: border-box;
+        text-align: center;
+        padding: 2rem;
+      }
+      .pix-modal-content h2 {
+        color: #333;
+        margin-top: 0;
+        border-bottom: none;
+      }
+      .pix-modal-content p {
+        color: #555;
+        line-height: 1.6;
+        font-size: 1rem; /* Fonte ligeiramente menor */
+      }
+      #pixQrCodeImg {
+        max-width: 250px;
+        width: 100%;
+        height: 250px;
+        border: 1px solid #ccc;
+        margin: 1rem auto;
+        display: block;
+      }
+      #pixCopiaECola {
+        width: 100%;
+        padding: 10px;
+        box-sizing: border-box;
+        border: 1px dashed #ff69b4;
+        background-color: #fdf6f9;
+        font-family: monospace;
+        font-size: 0.9rem;
+        margin-top: 1rem;
+        word-break: break-all;
+      }
+      #pixLoading {
+        display: none; /* Escondido por padrão */
+        padding: 2rem;
+        text-align: center;
+      }
+      .close-btn {
+        /* Estilo genérico para botões 'X' */
+        position: absolute;
+        top: 10px;
+        right: 20px;
+        font-size: 2.5rem;
+        color: #aaa;
+        cursor: pointer;
+        border: none;
+        background: none;
+      }
+      .close-btn:hover {
+        color: #333;
+      }
+
+      /* --- CORREÇÃO DE RESPONSIVIDADE --- */
       @media (max-width: 768px) {
         .checkout-grid {
           grid-template-columns: 1fr; /* Muda para uma única coluna */
@@ -167,8 +264,12 @@
         .form-row-split .form-group {
           flex: none; /* Reseta o flex: 1 */
         }
+        /* Ajuste abas */
+        .payment-method-tab {
+          padding: 10px;
+          font-size: 0.9rem;
+        }
       }
-      /* --- FIM DA CORREÇÃO --- */
     </style>
   </head>
   <body>
@@ -200,108 +301,175 @@
 
         <div class="payment-details">
           <h2>Pagamento</h2>
-          <form
-            id="form-checkout"
-            action="/cliente/processar-pagamento"
-            method="post"
-          >
-            <div class="form-group">
-              <label for="cardNumber">Número do Cartão</label>
-              <div id="cardNumberBrick_container" class="brick-container"></div>
+
+          <div class="payment-methods">
+            <div class="payment-method-tab active" data-target="#card-payment">
+              Cartão de Crédito
             </div>
-            <div style="display: flex; gap: 1rem" class="form-row-split">
-              <div class="form-group" style="flex: 1">
-                <label for="expirationDate">Validade</label>
+            <div class="payment-method-tab" data-target="#pix-payment">PIX</div>
+          </div>
+
+          <div id="card-payment" class="payment-content active">
+            <form
+              id="form-checkout"
+              action="/cliente/processar-pagamento"
+              method="post"
+            >
+              <div class="form-group">
+                <label for="cardNumber">Número do Cartão</label>
                 <div
-                  id="expirationDateBrick_container"
+                  id="cardNumberBrick_container"
                   class="brick-container"
                 ></div>
               </div>
-              <div class="form-group" style="flex: 1">
-                <label for="securityCode">CVV</label>
-                <div
-                  id="securityCodeBrick_container"
-                  class="brick-container"
-                ></div>
+              <div style="display: flex; gap: 1rem" class="form-row-split">
+                <div class="form-group" style="flex: 1">
+                  <label for="expirationDate">Validade</label>
+                  <div
+                    id="expirationDateBrick_container"
+                    class="brick-container"
+                  ></div>
+                </div>
+                <div class="form-group" style="flex: 1">
+                  <label for="securityCode">CVV</label>
+                  <div
+                    id="securityCodeBrick_container"
+                    class="brick-container"
+                  ></div>
+                </div>
               </div>
-            </div>
-            <div class="form-group">
-              <label for="cardholderName">Nome no Cartão</label>
+              <div class="form-group">
+                <label for="cardholderName">Nome no Cartão</label>
+                <input
+                  type="text"
+                  id="form-checkout__cardholderName"
+                  name="cardholderName"
+                />
+              </div>
+              <div class="form-group">
+                <label for="issuer">Banco Emissor</label>
+                <select id="form-checkout__issuer" name="issuer"></select>
+              </div>
+              <div class="form-group">
+                <label for="installments">Parcelas</label>
+                <select
+                  id="form-checkout__installments"
+                  name="installments"
+                ></select>
+              </div>
+              <div class="form-group">
+                <label for="identificationType">Tipo de Documento</label>
+                <select
+                  id="form-checkout__identificationType"
+                  name="identificationType"
+                ></select>
+              </div>
+              <div class="form-group">
+                <label for="identificationNumber">Número do Documento</label>
+                <input
+                  type="text"
+                  id="form-checkout__identificationNumber"
+                  name="identificationNumber"
+                />
+              </div>
+              <div class="form-group">
+                <label for="email">E-mail</label>
+                <input
+                  type="email"
+                  id="form-checkout__cardholderEmail"
+                  name="email"
+                  value="{{ .User.Email }}"
+                />
+              </div>
+              <input type="hidden" name="transactionAmount"
+              id="transactionAmount" value="{{ printf "%.2f" .Total }}" />
               <input
-                type="text"
-                id="form-checkout__cardholderName"
-                name="cardholderName"
+                type="hidden"
+                name="paymentMethodId"
+                id="paymentMethodId"
               />
-            </div>
-            <div class="form-group">
-              <label for="issuer">Banco Emissor</label>
-              <select id="form-checkout__issuer" name="issuer"></select>
-            </div>
-            <div class="form-group">
-              <label for="installments">Parcelas</label>
-              <select
-                id="form-checkout__installments"
-                name="installments"
-              ></select>
-            </div>
-            <div class="form-group">
-              <label for="identificationType">Tipo de Documento</label>
-              <select
-                id="form-checkout__identificationType"
-                name="identificationType"
-              ></select>
-            </div>
-            <div class="form-group">
-              <label for="identificationNumber">Número do Documento</label>
               <input
-                type="text"
-                id="form-checkout__identificationNumber"
-                name="identificationNumber"
+                type="hidden"
+                name="description"
+                id="description"
+                value="Pedido Meu Cupcake"
               />
-            </div>
-            <div class="form-group">
-              <label for="email">E-mail</label>
-              <input
-                type="email"
-                id="form-checkout__cardholderEmail"
-                name="email"
-                value="{{ .User.Email }}"
-              />
-            </div>
+              <button
+                type="submit"
+                id="form-checkout__submit"
+                class="btn btn-primary"
+                style="width: 100%"
+              >
+                Pagar Agora
+              </button>
+              <progress
+                value="0"
+                class="progress-bar"
+                style="display: none; width: 100%; margin-top: 10px"
+              >
+                Carregando...
+              </progress>
+            </form>
+          </div>
 
-            <input type="hidden" name="transactionAmount" id="transactionAmount"
-            value="{{ printf "%.2f" .Total }}" />
-            <input type="hidden" name="paymentMethodId" id="paymentMethodId" />
-            <input
-              type="hidden"
-              name="description"
-              id="description"
-              value="Pedido Meu Cupcake"
-            />
-
-            <button
-              type="submit"
-              id="form-checkout__submit"
-              class="btn btn-primary"
-              style="width: 100%"
-            >
-              Pagar Agora
-            </button>
-            <progress
-              value="0"
-              class="progress-bar"
-              style="display: none; width: 100%; margin-top: 10px"
-            >
-              Carregando...
-            </progress>
-          </form>
+          <div id="pix-payment" class="payment-content">
+            <p style="text-align: center; color: #555">
+              Pague com PIX de forma rápida e segura. O QR Code será gerado após
+              preencher seus dados.
+            </p>
+            <form id="pix-form">
+              <div class="form-group">
+                <label for="pixPayerEmail">E-mail</label>
+                <input
+                  type="email"
+                  id="pixPayerEmail"
+                  value="{{ .User.Email }}"
+                  required
+                />
+              </div>
+              <div class="form-group">
+                <label for="pixPayerDocType">Tipo de Documento</label>
+                <select id="pixPayerDocType">
+                  <option value="CPF">CPF</option>
+                  <option value="CNPJ">CNPJ</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label for="pixPayerDocNumber">Número do Documento</label>
+                <input type="text" id="pixPayerDocNumber" required />
+              </div>
+              <button
+                type="submit"
+                id="generatePixBtn"
+                class="btn btn-primary"
+                style="width: 100%"
+              >
+                Gerar Código PIX
+              </button>
+              <div id="pixLoading">Gerando PIX, aguarde...</div>
+            </form>
+          </div>
         </div>
+      </div>
+    </div>
+
+    <div class="modal-overlay" id="pixModal">
+      <div class="pix-modal-content">
+        <button class="close-btn" id="pixModalCloseBtn">&times;</button>
+        <h2>Pague com PIX</h2>
+        <p>Escaneie o QR Code ou use o "Copia e Cola" no seu app do banco.</p>
+        <img src="" alt="QR Code PIX" id="pixQrCodeImg" />
+        <textarea id="pixCopiaECola" rows="4" readonly></textarea>
+        <p style="font-weight: bold; margin-top: 1rem">
+          Aguardando pagamento...
+        </p>
       </div>
     </div>
 
     <script src="https://sdk.mercadopago.com/js/v2"></script>
 
     <script>
+      // --- INICIALIZAÇÃO DO FORMULÁRIO DE CARTÃO (Seu código existente) ---
       const mp = new MercadoPago("{{ .MercadoPagoPublicKey }}");
       const cardForm = mp.cardForm({
         amount: document.getElementById("transactionAmount").value,
@@ -412,6 +580,99 @@
             document.querySelector(".progress-bar").style.display = "none";
           },
         },
+      });
+
+      document.addEventListener("DOMContentLoaded", () => {
+        const pixModal = document.getElementById("pixModal");
+        const pixForm = document.getElementById("pix-form");
+        const pixLoading = document.getElementById("pixLoading");
+        const generatePixBtn = document.getElementById("generatePixBtn");
+        const pixModalCloseBtn = document.getElementById("pixModalCloseBtn");
+
+        // Lógica das Abas
+        const tabs = document.querySelectorAll(".payment-method-tab");
+        const contents = document.querySelectorAll(".payment-content");
+        tabs.forEach((tab) => {
+          tab.addEventListener("click", () => {
+            tabs.forEach((t) => t.classList.remove("active"));
+            contents.forEach((c) => c.classList.remove("active"));
+            tab.classList.add("active");
+            document.querySelector(tab.dataset.target).classList.add("active");
+          });
+        });
+
+        // Lógica do Formulário PIX
+        if (pixForm) {
+          pixForm.addEventListener("submit", (e) => {
+            e.preventDefault();
+            generatePixBtn.disabled = true;
+            pixLoading.style.display = "block";
+
+            const payerEmail = document.getElementById("pixPayerEmail").value;
+            const docType = document.getElementById("pixPayerDocType").value;
+            const docNumber =
+              document.getElementById("pixPayerDocNumber").value;
+            const amount = Number(
+              document.getElementById("transactionAmount").value
+            );
+
+            fetch("/cliente/processar-pagamento-pix", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                transaction_amount: amount,
+                description: "Pedido Meu Cupcake",
+                payer: {
+                  email: payerEmail,
+                  identification: { type: docType, number: docNumber },
+                },
+              }),
+            })
+              .then((response) => {
+                if (!response.ok) {
+                  return response
+                    .json()
+                    .then((errData) => Promise.reject(errData));
+                }
+                return response.json();
+              })
+              .then((data) => {
+                generatePixBtn.disabled = false;
+                pixLoading.style.display = "none";
+
+                if (data.error) {
+                  alert("Erro ao gerar PIX: " + (data.message || data.error));
+                  return;
+                }
+
+                document.getElementById(
+                  "pixQrCodeImg"
+                ).src = `data:image/png;base64,${data.qr_code_base64}`;
+                document.getElementById("pixCopiaECola").value = data.qr_code;
+                pixModal.style.display = "flex";
+              })
+              .catch((errData) => {
+                generatePixBtn.disabled = false;
+                pixLoading.style.display = "none";
+                alert(
+                  "Erro inesperado ao gerar PIX: " +
+                    (errData.message || "Tente novamente.")
+                );
+                console.error("Erro Fetch PIX:", errData);
+              });
+          });
+        }
+
+        // Lógica para fechar o Modal do PIX
+        if (pixModal) {
+          pixModalCloseBtn.addEventListener("click", () => {
+            pixModal.style.display = "none";
+          });
+          pixModal.addEventListener("click", (e) => {
+            // Mudado de modalOverlay para pixModal
+            if (e.target === pixModal) pixModal.style.display = "none";
+          });
+        }
       });
     </script>
   </body>
