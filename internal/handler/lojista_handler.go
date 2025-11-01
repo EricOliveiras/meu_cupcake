@@ -2,6 +2,7 @@ package handler
 
 import (
 	"fmt"
+	"log"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -13,6 +14,8 @@ import (
 	"github.com/google/uuid"
 	"github.com/gorilla/sessions"
 )
+
+const defaultCupcakeImage = "/static/images/placeholder.png"
 
 type LojistaHandler struct {
 	Store *sessions.CookieStore
@@ -68,100 +71,121 @@ func (h *LojistaHandler) ProcessNewCupcakeForm(c *gin.Context) {
 	precoStr := c.PostForm("preco")
 	disponivelStr := c.PostForm("disponivel")
 
-	file, err := c.FormFile("imagem")
-	if err != nil {
-		c.String(http.StatusBadRequest, fmt.Sprintf("Erro ao obter arquivo: %s", err.Error()))
-		return
-	}
-
-	extensao := filepath.Ext(file.Filename)
-	novoNomeArquivo := uuid.New().String() + extensao
-	caminhoDestino := filepath.Join("uploads", novoNomeArquivo)
-
-	if err := c.SaveUploadedFile(file, caminhoDestino); err != nil {
-		c.String(http.StatusInternalServerError, fmt.Sprintf("Erro ao salvar arquivo: %s", err.Error()))
-		return
-	}
-
 	preco, err := strconv.ParseFloat(precoStr, 64)
 	if err != nil {
-		c.String(http.StatusBadRequest, "O preço fornecido é inválido.")
+		log.Printf("Erro ao converter preço: %v", err)
+		c.Redirect(http.StatusSeeOther, "/lojista/cupcakes?error=Preço inválido")
 		return
 	}
+
 	disponivel := disponivelStr == "true"
 
-	novoCupcake := model.Cupcake{
+	var imagemURL = defaultCupcakeImage
+
+	file, err := c.FormFile("imagem")
+
+	if err == nil {
+		ext := filepath.Ext(file.Filename)
+		newFileName := uuid.New().String() + ext
+		uploadPath := filepath.Join("uploads", newFileName)
+
+		if err := c.SaveUploadedFile(file, uploadPath); err != nil {
+			log.Printf("Erro ao salvar imagem: %v", err)
+			c.Redirect(http.StatusSeeOther, "/lojista/cupcakes?error=Erro ao salvar imagem")
+			return
+		}
+
+		imagemURL = "/" + uploadPath
+
+	} else if err != http.ErrMissingFile {
+		log.Printf("Erro ao processar form-file: %v", err)
+		c.Redirect(http.StatusSeeOther, "/lojista/cupcakes?error=Erro ao processar arquivo de imagem")
+		return
+	}
+
+	cupcake := model.Cupcake{
 		Nome:       nome,
 		Descricao:  descricao,
 		Preco:      preco,
 		Disponivel: disponivel,
-		ImagemURL:  fmt.Sprintf("/uploads/%s", novoNomeArquivo),
+		ImagemURL:  imagemURL,
 	}
 
-	if err := database.DB.Create(&novoCupcake).Error; err != nil {
-		c.String(http.StatusInternalServerError, "Erro ao salvar cupcake no banco de dados.")
+	if err := database.DB.Create(&cupcake).Error; err != nil {
+		log.Printf("Erro ao criar cupcake no DB: %v", err)
+		c.Redirect(http.StatusSeeOther, "/lojista/cupcakes?error=Erro ao salvar no banco de dados")
 		return
 	}
 
-	c.Redirect(http.StatusFound, "/lojista/cupcakes")
+	log.Println("Novo cupcake criado com sucesso.")
+	c.Redirect(http.StatusSeeOther, "/lojista/cupcakes")
 }
 
 // ShowEditCupcakeForm busca um cupcake pelo ID e exibe o formulário de edição (via modal, esta função não é mais usada para renderizar HTML diretamente)
-func (h *LojistaHandler) ShowEditCupcakeForm(c *gin.Context) {
-	idStr := c.Param("id")
-	id, err := strconv.ParseUint(idStr, 10, 32)
-	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "ID inválido."})
-		return
-	}
-
-	var cupcake model.Cupcake
-	if err := database.DB.First(&cupcake, id).Error; err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": "Cupcake não encontrado."})
-		return
-	}
-	c.JSON(http.StatusOK, cupcake)
-}
-
-// ProcessEditCupcakeForm processa os dados do formulário de edição.
 func (h *LojistaHandler) ProcessEditCupcakeForm(c *gin.Context) {
 	idStr := c.Param("id")
 	id, err := strconv.ParseUint(idStr, 10, 32)
 	if err != nil {
-		c.String(http.StatusBadRequest, "ID inválido.")
+		c.Redirect(http.StatusSeeOther, "/lojista/cupcakes?error=ID inválido")
 		return
 	}
 
 	var cupcake model.Cupcake
-	if err := database.DB.First(&cupcake, id).Error; err != nil {
-		c.String(http.StatusNotFound, "Cupcake não encontrado.")
+	if err := database.DB.First(&cupcake, uint(id)).Error; err != nil {
+		c.Redirect(http.StatusSeeOther, "/lojista/cupcakes?error=Cupcake não encontrado")
 		return
 	}
+
+	oldImagePath := cupcake.ImagemURL
 
 	cupcake.Nome = c.PostForm("nome")
 	cupcake.Descricao = c.PostForm("descricao")
-	preco, _ := strconv.ParseFloat(c.PostForm("preco"), 64)
-	cupcake.Preco = preco
 	cupcake.Disponivel = c.PostForm("disponivel") == "true"
+	precoStr := c.PostForm("preco")
+	preco, err := strconv.ParseFloat(precoStr, 64)
+	if err != nil {
+		c.Redirect(http.StatusSeeOther, "/lojista/cupcakes?error=Preço inválido")
+		return
+	}
+	cupcake.Preco = preco
 
 	file, err := c.FormFile("imagem")
 	if err == nil {
-		extensao := filepath.Ext(file.Filename)
-		novoNomeArquivo := uuid.New().String() + extensao
-		caminhoDestino := filepath.Join("uploads", novoNomeArquivo)
-		if err := c.SaveUploadedFile(file, caminhoDestino); err == nil {
-			// Opcional: remover imagem antiga antes de salvar a nova URL
-			// os.Remove(cupcake.ImagemURL[1:]) // Remove a barra inicial antes de tentar deletar
-			cupcake.ImagemURL = fmt.Sprintf("/uploads/%s", novoNomeArquivo)
-		}
-	}
+		ext := filepath.Ext(file.Filename)
+		newFileName := uuid.New().String() + ext
+		uploadPath := filepath.Join("uploads", newFileName)
 
-	if err := database.DB.Save(&cupcake).Error; err != nil {
-		c.String(http.StatusInternalServerError, "Erro ao atualizar o cupcake.")
+		if err := c.SaveUploadedFile(file, uploadPath); err != nil {
+			log.Printf("Erro ao salvar nova imagem: %v", err)
+			c.Redirect(http.StatusSeeOther, "/lojista/cupcakes?error=Erro ao salvar imagem")
+			return
+		}
+
+		cupcake.ImagemURL = "/" + uploadPath
+
+		if oldImagePath != defaultCupcakeImage && oldImagePath != "" {
+			fsOldPath := filepath.Clean(oldImagePath[1:])
+			if err := os.Remove(fsOldPath); err != nil {
+				log.Printf("AVISO: Não foi possível remover a imagem antiga '%s': %v", fsOldPath, err)
+			} else {
+				log.Printf("Imagem antiga '%s' removida com sucesso.", fsOldPath)
+			}
+		}
+
+	} else if err != http.ErrMissingFile {
+		log.Printf("Erro ao processar form-file (edição): %v", err)
+		c.Redirect(http.StatusSeeOther, "/lojista/cupcakes?error=Erro ao processar arquivo de imagem")
 		return
 	}
 
-	c.Redirect(http.StatusFound, "/lojista/cupcakes")
+	if err := database.DB.Save(&cupcake).Error; err != nil {
+		log.Printf("Erro ao atualizar cupcake no DB: %v", err)
+		c.Redirect(http.StatusSeeOther, "/lojista/cupcakes?error=Erro ao salvar no banco de dados")
+		return
+	}
+
+	log.Println("Cupcake atualizado com sucesso.")
+	c.Redirect(http.StatusSeeOther, "/lojista/cupcakes")
 }
 
 // DeleteCupcake remove um cupcake do banco de dados e o arquivo de imagem associado.
@@ -169,31 +193,36 @@ func (h *LojistaHandler) DeleteCupcake(c *gin.Context) {
 	idStr := c.Param("id")
 	id, err := strconv.ParseUint(idStr, 10, 32)
 	if err != nil {
-		c.String(http.StatusBadRequest, "ID inválido.")
+		c.Redirect(http.StatusSeeOther, "/lojista/cupcakes?error=ID inválido")
 		return
 	}
 
 	var cupcake model.Cupcake
-	if err := database.DB.First(&cupcake, id).Error; err != nil {
-		c.String(http.StatusNotFound, "Cupcake não encontrado.")
+	if err := database.DB.First(&cupcake, uint(id)).Error; err != nil {
+		c.Redirect(http.StatusSeeOther, "/lojista/cupcakes?error=Cupcake não encontrado")
 		return
 	}
 
-	filePath := cupcake.ImagemURL
-	if len(filePath) > 0 && filePath[0] == '/' {
-		filePath = filePath[1:]
-	}
+	imagePath := cupcake.ImagemURL
 
-	if err := os.Remove(filePath); err != nil {
-		fmt.Printf("Aviso: não foi possível remover o arquivo %s: %v\n", filePath, err)
-	}
-
-	if err := database.DB.Delete(&model.Cupcake{}, id).Error; err != nil {
-		c.String(http.StatusInternalServerError, "Erro ao excluir o cupcake do banco de dados.")
+	if err := database.DB.Delete(&cupcake).Error; err != nil {
+		log.Printf("Erro ao deletar cupcake do DB: %v", err)
+		c.Redirect(http.StatusSeeOther, "/lojista/cupcakes?error=Erro ao deletar do banco")
 		return
 	}
 
-	c.Redirect(http.StatusFound, "/lojista/cupcakes")
+	log.Printf("Cupcake %d enviado para a lixeira (ou deletado) do DB.", id)
+
+	if imagePath != defaultCupcakeImage && imagePath != "" {
+		fsPath := filepath.Clean(imagePath[1:])
+		if err := os.Remove(fsPath); err != nil {
+			log.Printf("AVISO: Não foi possível remover o arquivo de imagem '%s': %v", fsPath, err)
+		} else {
+			log.Printf("Arquivo de imagem '%s' removido com sucesso.", fsPath)
+		}
+	}
+
+	c.Redirect(http.StatusSeeOther, "/lojista/cupcakes")
 }
 
 func (h *LojistaHandler) ShowLojistaVendasPage(c *gin.Context) {
