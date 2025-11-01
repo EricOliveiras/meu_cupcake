@@ -21,9 +21,7 @@
     <a href="/logout" class="btn btn-primary btn-mobile">Sair</a>
 
     {{ else if and .IsLoggedIn (eq .User.Tipo "cliente") }} {{ if ne .ActivePage
-    "vitrine" }}
-    <a href="/vitrine">Vitrine</a>
-    {{ end }}
+    "vitrine" }} {{ end }}
     <a href="/carrinho" class="cart-link">
       <span class="cart-icon">🛒</span>
       <span class="cart-text">Carrinho</span>
