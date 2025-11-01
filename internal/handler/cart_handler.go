@@ -481,6 +481,181 @@ func (h *CartHandler) ProcessPayment(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"status": responseStatus, "message": message, "paymentId": mpPaymentID})
 }
 
+// ProcessPixPayment recebe os dados do pagador, cria o pedido e gera um pagamento PIX.
+func (h *CartHandler) ProcessPixPayment(c *gin.Context) {
+	if h.MPCfg == nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Configuração de pagamento indisponível."})
+		return
+	}
+
+	var pixReqData struct {
+		TransactionAmount float64 `json:"transaction_amount"`
+		Description       string  `json:"description"`
+		Payer             struct {
+			Email          string `json:"email"`
+			Identification struct {
+				Type   string `json:"type"`
+				Number string `json:"number"`
+			} `json:"identification"`
+		} `json:"payer"`
+	}
+	if err := c.ShouldBindJSON(&pixReqData); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Dados do pagador inválidos."})
+		return
+	}
+	fmt.Printf("Dados Pagamento PIX Recebidos: %+v\n", pixReqData)
+
+	userData, exists := c.Get("user")
+	if !exists {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "Usuário não autenticado."})
+		return
+	}
+	user := userData.(model.Usuario)
+
+	session, _ := h.Store.Get(c.Request, "meu-cupcake-session")
+	cartData := session.Values[CartSessionKey]
+	cart, ok := cartData.(map[uint]int)
+	if !ok || len(cart) == 0 {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Carrinho vazio."})
+		return
+	}
+
+	// --- 1. LÓGICA DE RECÁLCULO ---
+	var currentTotal float64
+	cupcakeIDs := make([]uint, 0, len(cart))
+	for id := range cart {
+		cupcakeIDs = append(cupcakeIDs, id)
+	}
+
+	var cupcakesFromDB []model.Cupcake
+	result := database.DB.Where("id IN ? AND disponivel = ?", cupcakeIDs, true).Find(&cupcakesFromDB)
+	if result.Error != nil && result.Error != gorm.ErrRecordNotFound {
+		fmt.Printf("Erro DB ao buscar cupcakes: %v\n", result.Error)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Erro ao verificar produtos."})
+		return
+	}
+
+	cupcakeMap := make(map[uint]model.Cupcake)
+	for _, cp := range cupcakesFromDB {
+		cupcakeMap[cp.ID] = cp
+	}
+
+	validItems := make([]CartItemView, 0, len(cart))
+	validItemCount := 0
+	for id, quantity := range cart {
+		cupcake, found := cupcakeMap[id]
+		if found {
+			subtotal := cupcake.Preco * float64(quantity)
+			validItems = append(validItems, CartItemView{
+				Cupcake: cupcake, Quantity: quantity, Subtotal: subtotal,
+			})
+			currentTotal += subtotal
+			validItemCount++
+		}
+	}
+
+	if validItemCount != len(cart) || len(validItems) == 0 {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Um ou mais itens no seu carrinho não estão mais disponíveis."})
+		return
+	}
+
+	tolerance := 0.01
+	if (currentTotal-pixReqData.TransactionAmount) > tolerance || (pixReqData.TransactionAmount-currentTotal) > tolerance {
+		fmt.Printf("ALERTA SEGURANÇA (PIX): Total Backend (%.2f) != Total Frontend (%.2f)\n", currentTotal, pixReqData.TransactionAmount)
+		c.JSON(http.StatusBadRequest, gin.H{"error": "O valor total do pedido foi modificado."})
+		return
+	}
+	fmt.Printf("Validação Total PIX OK: Backend=%.2f, Frontend=%.2f\n", currentTotal, pixReqData.TransactionAmount)
+	// --- Fim da lógica de validação ---
+
+	// 4. CRIAR PEDIDO E ITENS NO BANCO DE DADOS (Status Pendente)
+	var pedidoCriado model.Order
+	err := database.DB.Transaction(func(tx *gorm.DB) error {
+		externalRef := fmt.Sprintf("pedido_%d_%d", user.ID, time.Now().UnixNano())
+		pedido := model.Order{
+			UsuarioID:         user.ID,
+			Status:            model.StatusPendente,
+			Total:             currentTotal,
+			MetodoPagamento:   "pix",
+			Parcelas:          1,
+			ExternalReference: externalRef,
+		}
+		if err := tx.Create(&pedido).Error; err != nil {
+			return err
+		}
+		pedidoCriado = pedido
+
+		for _, item := range validItems {
+			itemPedido := model.ItemOrder{
+				PedidoID:      pedido.ID,
+				CupcakeID:     item.Cupcake.ID,
+				Quantidade:    item.Quantity,
+				PrecoUnitario: item.Cupcake.Preco,
+				Subtotal:      item.Subtotal,
+			}
+			if err := tx.Create(&itemPedido).Error; err != nil {
+				fmt.Printf("Erro ao criar item %d do pedido %d no DB: %v\n", item.Cupcake.ID, pedido.ID, err)
+				return errors.New("erro ao salvar os itens do pedido")
+			}
+		}
+
+		return nil
+	})
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Erro ao registrar o pedido no banco."})
+		return
+	}
+	fmt.Printf("Pedido PIX %d criado no DB (Ref: %s)\n", pedidoCriado.ID, pedidoCriado.ExternalReference)
+
+	// 5. CHAMAR A API DO MERCADO PAGO PARA GERAR O PIX
+	fmt.Println("Tentando criar pagamento PIX via API Mercado Pago...")
+	client := payment.NewClient(h.MPCfg)
+
+	request := payment.Request{
+		TransactionAmount: currentTotal,
+		Description:       pixReqData.Description,
+		PaymentMethodID:   "pix",
+		ExternalReference: pedidoCriado.ExternalReference,
+		Payer: &payment.PayerRequest{
+			Email: pixReqData.Payer.Email,
+			Identification: &payment.IdentificationRequest{
+				Type:   pixReqData.Payer.Identification.Type,
+				Number: pixReqData.Payer.Identification.Number,
+			},
+			FirstName: user.Nome,
+		},
+		// notification_url: "SUA_URL_WEBHOOK", // IMPORTANTE!
+	}
+
+	resource, err := client.Create(context.Background(), request)
+
+	if err != nil {
+		fmt.Printf("Erro ao criar PIX no MP: %v\n", err)
+		database.DB.Model(&pedidoCriado).Update("status", model.StatusFalhou)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Erro ao gerar PIX com o provedor."})
+		return
+	}
+
+	// 6. TRATAR RESPOSTA E ENVIAR QR CODE PARA O FRONTEND
+	if resource.Status == "pending" {
+		fmt.Println("Pagamento PIX gerado com sucesso, aguardando pagamento.")
+
+		mpPaymentID := int64(resource.ID)
+		database.DB.Model(&pedidoCriado).Update("PagamentoMPID", mpPaymentID)
+
+		c.JSON(http.StatusOK, gin.H{
+			"status":         "pending",
+			"payment_id":     resource.ID,
+			"qr_code_base64": resource.PointOfInteraction.TransactionData.QRCodeBase64,
+			"qr_code":        resource.PointOfInteraction.TransactionData.QRCode,
+		})
+	} else {
+		fmt.Printf("Status inesperado ao gerar PIX: %s\n", resource.Status)
+		database.DB.Model(&pedidoCriado).Update("status", model.StatusFalhou)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Status inesperado do provedor de pagamento."})
+	}
+}
+
 // --- Funções Auxiliares ---
 func (h *CartHandler) getUserFromSession(c *gin.Context) (model.Usuario, bool) {
 	session, _ := h.Store.Get(c.Request, "meu-cupcake-session")
