@@ -2,17 +2,23 @@
 package handler
 
 import (
+	"context"
 	"fmt"
 	"net/http"
+	"strconv"
 
 	"github.com/ericoliveiras/meu-cupcake/internal/database"
 	"github.com/ericoliveiras/meu-cupcake/internal/model"
 	"github.com/gin-gonic/gin"
 	"github.com/gorilla/sessions"
+	"github.com/mercadopago/sdk-go/pkg/config"
+	"github.com/mercadopago/sdk-go/pkg/payment"
+	"gorm.io/gorm"
 )
 
 type HomeHandler struct {
 	Store *sessions.CookieStore
+	MPCfg *config.Config
 }
 
 // getUserFromSession é uma função auxiliar para buscar os dados do usuário logado.
@@ -184,4 +190,78 @@ func (h *HomeHandler) ShowClientePedidosPage(c *gin.Context) {
 		"CartItemCount": cartCount,
 		"Pedidos":       pedidos,
 	})
+}
+
+func (h *HomeHandler) ShowPedidoPagamentoPage(c *gin.Context) {
+	user, _ := c.Get("user")
+	usuario := user.(model.Usuario)
+
+	// Pega o ID do pedido da URL
+	pedidoIDStr := c.Param("id")
+	pedidoID, err := strconv.ParseUint(pedidoIDStr, 10, 32)
+	if err != nil {
+		c.String(http.StatusNotFound, "Página não encontrada.")
+		return
+	}
+
+	// Busca o pedido no DB, garantindo que ele pertence ao usuário logado
+	var pedido model.Order
+	err = database.DB.Where("id = ? AND usuario_id = ?", pedidoID, usuario.ID).First(&pedido).Error
+	if err != nil {
+		if err == gorm.ErrRecordNotFound {
+			c.String(http.StatusNotFound, "Pedido não encontrado.")
+			return
+		}
+		c.String(http.StatusInternalServerError, "Erro ao buscar pedido.")
+		return
+	}
+
+	// Se o pedido não for PIX ou não estiver pendente, não há o que mostrar
+	if pedido.Status != model.StatusPendente || pedido.MetodoPagamento != "pix" || pedido.PagamentoMPID == nil {
+		c.String(http.StatusBadRequest, "Este pagamento não está pendente ou não é PIX.")
+		return
+	}
+
+	// --- BUSCA OS DADOS DO PIX NO MERCADO PAGO ---
+	fmt.Printf("Buscando dados do pagamento MP ID: %d\n", *pedido.PagamentoMPID)
+	client := payment.NewClient(h.MPCfg)
+	resource, err := client.Get(context.Background(), int(*pedido.PagamentoMPID))
+
+	if err != nil {
+		fmt.Printf("Erro ao buscar pagamento no MP: %v\n", err)
+		c.String(http.StatusInternalServerError, "Erro ao buscar dados do pagamento.")
+		return
+	}
+
+	// Verifica se o pagamento ainda está pendente no MP
+	if resource.Status == "pending" {
+		session, _ := h.Store.Get(c.Request, "meu-cupcake-session")
+		cartData := session.Values[CartSessionKey]
+		cart, _ := cartData.(map[uint]int)
+		cartCount := getTotalCartQuantityHelper(cart)
+
+		c.HTML(http.StatusOK, "pagamento_pix.html", gin.H{
+			"IsLoggedIn":       true,
+			"User":             usuario,
+			"Pedido":           pedido,
+			"QrCodeBase64":     resource.PointOfInteraction.TransactionData.QRCodeBase64,
+			"QrCodeCopiaECola": resource.PointOfInteraction.TransactionData.QRCode,
+			"Total":            pedido.Total,
+			"CartItemCount":    cartCount,
+		})
+	} else {
+		// O pagamento não está mais pendente (foi pago ou expirou)
+		// Atualiza nosso banco (caso o webhook tenha falhado)
+		switch resource.Status {
+		case "approved":
+			database.DB.Model(&pedido).Update("status", model.StatusPago)
+		case "cancelled", "expired":
+			database.DB.Model(&pedido).Update("status", model.StatusFalhou) // Ou "expirado"
+		}
+		// Redireciona de volta para o histórico de pedidos
+		session, _ := h.Store.Get(c.Request, "meu-cupcake-session")
+		session.AddFlash("O status deste pagamento mudou. Verifique seu histórico.", "success")
+		session.Save(c.Request, c.Writer)
+		c.Redirect(http.StatusFound, "/cliente/pedidos")
+	}
 }
