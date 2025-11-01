@@ -3,7 +3,7 @@ package main
 
 import (
 	"encoding/gob"
-	"fmt" // Import fmt para logs não-fatais
+	"fmt"
 	"log"
 	"os"
 
@@ -21,11 +21,8 @@ var store *sessions.CookieStore
 func main() {
 	gob.Register(map[uint]int{})
 
-	// --- CORREÇÃO AQUI ---
-	// Tenta carregar o .env, mas não falha se não existir
 	err := godotenv.Load()
 	if err != nil {
-		// Apenas loga um aviso em vez de encerrar
 		fmt.Println("Aviso: Erro ao carregar o arquivo .env:", err)
 		fmt.Println("Continuando execução, esperando variáveis de ambiente do sistema/segredos.")
 	} else {
@@ -35,7 +32,6 @@ func main() {
 
 	mpAccessToken := os.Getenv("MP_ACCESS_TOKEN")
 	if mpAccessToken == "" {
-		// Mantém Fatal aqui, pois sem token MP não funciona
 		log.Fatal("FATAL: MP_ACCESS_TOKEN não encontrado no ambiente.")
 	}
 	cfg, err := config.New(mpAccessToken)
@@ -44,21 +40,21 @@ func main() {
 	}
 	log.Println("SDK do Mercado Pago v2 configurado...")
 
-	sessionSecret := os.Getenv("SESSION_SECRET") // Lê a chave da sessão
+	sessionSecret := os.Getenv("SESSION_SECRET")
 	if sessionSecret == "" {
 		log.Fatal("FATAL: SESSION_SECRET não encontrado no ambiente.")
 	}
-	store = sessions.NewCookieStore([]byte(sessionSecret)) // Usa a chave lida
+	store = sessions.NewCookieStore([]byte(sessionSecret))
 
 	// Cria instâncias dos handlers
 	authHandler := &handler.AuthHandler{Store: store}
-	homeHandler := &handler.HomeHandler{Store: store}
-	lojistaHandler := &handler.LojistaHandler{Store: store}
+	homeHandler := &handler.HomeHandler{Store: store, MPCfg: cfg}
+	lojistaHandler := &handler.LojistaHandler{Store: store, MPCfg: cfg}
 	cartHandler := &handler.CartHandler{Store: store, MPCfg: cfg}
 
 	// Conecta ao DB (ConnectDB deve ler DATABASE_URL do ambiente)
 	database.ConnectDB()
-	database.SeedLojista() // Opcional no deploy, pode remover se não quiser rodar sempre
+	database.SeedLojista()
 
 	router := gin.Default()
 
@@ -108,6 +104,8 @@ func main() {
 		clienteRoutes.GET("/checkout", cartHandler.ShowCheckoutPage)
 		clienteRoutes.GET("/pedidos", homeHandler.ShowClientePedidosPage)
 		clienteRoutes.POST("/processar-pagamento", cartHandler.ProcessPayment)
+		clienteRoutes.POST("/processar-pagamento-pix", cartHandler.ProcessPixPayment)
+		clienteRoutes.GET("/pedido/pagamento/:id", homeHandler.ShowPedidoPagamentoPage)
 	}
 
 	// --- Rotas Protegidas do Lojista ---
