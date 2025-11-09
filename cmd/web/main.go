@@ -94,6 +94,8 @@ func main() {
 	protected.Use(authHandler.AuthRequired())
 	{
 		protected.GET("/perfil", homeHandler.ShowProfilePage)
+		protected.GET("/perfil/editar", homeHandler.ShowEditProfilePage)   // Rota para mostrar o formulário
+		protected.POST("/perfil/editar", homeHandler.ProcessEditProfileForm) // Rota para processar o formulário
 	}
 
 	// --- Rotas Protegidas do Cliente ---
@@ -119,6 +121,7 @@ func main() {
 		lojistaRoutes.POST("/cupcakes/editar/:id", lojistaHandler.ProcessEditCupcakeForm)
 		lojistaRoutes.GET("/cupcakes/excluir/:id", lojistaHandler.DeleteCupcake)
 		lojistaRoutes.GET("/vendas", lojistaHandler.ShowLojistaVendasPage)
+		lojistaRoutes.POST("/vendas/status/:id", lojistaHandler.UpdatePedidoStatus)
 	}
 
 	// --- Inicialização do Servidor ---
