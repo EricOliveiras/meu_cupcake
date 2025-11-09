@@ -4,6 +4,7 @@ package handler
 import (
 	"context"
 	"fmt"
+	"log"
 	"net/http"
 	"strconv"
 
@@ -79,22 +80,32 @@ func (h *HomeHandler) ShowHomePage(c *gin.Context) {
 func (h *HomeHandler) ShowProfilePage(c *gin.Context) {
 	userData, _ := c.Get("user")
 	user := userData.(model.Usuario)
+
 	session, _ := h.Store.Get(c.Request, "meu-cupcake-session")
-	cartCount := getTotalCartQuantity(session)
+	cartData := session.Values[CartSessionKey]
+	cart, _ := cartData.(map[uint]int)
+	cartCount := getTotalCartQuantityHelper(cart)
+
+	flashesSuccess := session.Flashes("success")
+	flashesError := session.Flashes("error")
+	err := session.Save(c.Request, c.Writer)
+	if err != nil {
+		fmt.Printf("AVISO: Erro ao salvar sessão em ShowProfilePage: %v\n", err)
+	}
+
+	data := gin.H{
+		"IsLoggedIn":     true,
+		"User":           user,
+		"CartItemCount":  cartCount,
+		"FlashesSuccess": flashesSuccess,
+		"FlashesError":   flashesError,
+	}
 
 	switch user.Tipo {
 	case model.RoleLojista:
-		c.HTML(http.StatusOK, "lojista_profile.html", gin.H{
-			"IsLoggedIn":    true,
-			"User":          user,
-			"CartItemCount": cartCount,
-		})
+		c.HTML(http.StatusOK, "lojista_profile.html", data)
 	case model.RoleCliente:
-		c.HTML(http.StatusOK, "cliente_profile.html", gin.H{
-			"IsLoggedIn":    true,
-			"User":          user,
-			"CartItemCount": cartCount,
-		})
+		c.HTML(http.StatusOK, "cliente_profile.html", data)
 	default:
 		c.String(http.StatusInternalServerError, "Tipo de usuário desconhecido.")
 	}
@@ -264,4 +275,96 @@ func (h *HomeHandler) ShowPedidoPagamentoPage(c *gin.Context) {
 		session.Save(c.Request, c.Writer)
 		c.Redirect(http.StatusFound, "/cliente/pedidos")
 	}
+}
+
+// ShowEditProfilePage exibe o formulário de edição de perfil.
+func (h *HomeHandler) ShowEditProfilePage(c *gin.Context) {
+	userData, _ := c.Get("user")
+	user := userData.(model.Usuario)
+
+	session, _ := h.Store.Get(c.Request, "meu-cupcake-session")
+	cartData := session.Values[CartSessionKey]
+	cart, _ := cartData.(map[uint]int)
+	cartCount := getTotalCartQuantityHelper(cart)
+
+	c.HTML(http.StatusOK, "perfil_editar.html", gin.H{
+		"IsLoggedIn":     true,
+		"User":           user,
+		"CartItemCount":  cartCount,
+		"FlashesSuccess": session.Flashes("success"),
+		"FlashesError":   session.Flashes("error"),
+	})
+	session.Save(c.Request, c.Writer)
+}
+
+// ProcessEditProfileForm processa a atualização do perfil.
+func (h *HomeHandler) ProcessEditProfileForm(c *gin.Context) {
+	userData, _ := c.Get("user")
+	user := userData.(model.Usuario)
+	session, _ := h.Store.Get(c.Request, "meu-cupcake-session")
+
+	// Pega TODOS os dados do formulário
+	novoNome := c.PostForm("nome")
+	novoEmail := c.PostForm("email")
+	novoTelefone := c.PostForm("telefone")
+	novoCEP := c.PostForm("cep")
+	novoRua := c.PostForm("rua")
+	novoNumero := c.PostForm("numero")
+	novoComplemento := c.PostForm("complemento")
+	novoBairro := c.PostForm("bairro")
+	novoCidade := c.PostForm("cidade")
+	novoEstado := c.PostForm("estado")
+
+	// Validação básica
+	if novoNome == "" || novoEmail == "" {
+		session.AddFlash("Nome e E-mail são obrigatórios.", "error")
+		session.Save(c.Request, c.Writer)
+		c.Redirect(http.StatusFound, "/perfil/editar")
+		return
+	}
+
+	// Validação de E-mail (se foi alterado)
+	if novoEmail != user.Email {
+		var existingUser model.Usuario
+		if err := database.DB.Where("email = ?", novoEmail).First(&existingUser).Error; err == nil {
+			session.AddFlash("O e-mail informado já está em uso por outra conta.", "error")
+			session.Save(c.Request, c.Writer)
+			c.Redirect(http.StatusFound, "/perfil/editar")
+			return
+		}
+	}
+
+	// Atualiza os dados no banco
+	// Usamos .Updates() que só atualiza campos não-nulos/não-zero
+	// Para garantir que campos em branco (ex: complemento) sejam salvos, usamos Select()
+	// Ou podemos usar um map[string]interface{}
+
+	updateData := map[string]interface{}{
+		"Nome":        novoNome,
+		"Email":       novoEmail,
+		"Telefone":    novoTelefone,
+		"CEP":         novoCEP,
+		"Rua":         novoRua,
+		"Numero":      novoNumero,
+		"Complemento": novoComplemento,
+		"Bairro":      novoBairro,
+		"Cidade":      novoCidade,
+		"Estado":      novoEstado,
+	}
+
+	result := database.DB.Model(&user).Updates(updateData)
+
+	if result.Error != nil {
+		log.Printf("Erro ao atualizar perfil do usuário %d: %v\n", user.ID, result.Error)
+		session.AddFlash("Erro ao salvar as alterações. Tente novamente.", "error")
+		session.Save(c.Request, c.Writer)
+		c.Redirect(http.StatusFound, "/perfil/editar")
+		return
+	}
+
+	log.Printf("Perfil do usuário %d atualizado.\n", user.ID)
+	session.AddFlash("Perfil atualizado com sucesso!", "success")
+	session.Save(c.Request, c.Writer)
+
+	c.Redirect(http.StatusFound, "/perfil")
 }
