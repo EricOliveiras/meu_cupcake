@@ -5,26 +5,30 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Meu Carrinho - Meu Cupcake</title>
     <link rel="stylesheet" href="/static/css/style.css" />
-    <link rel="icon" type="image/png" href="/static/images/favicon.png" />
     <style>
       .container {
         max-width: 900px;
         margin: 2rem auto;
-        padding: 0 1rem; /* Adiciona padding lateral em telas menores */
+        padding: 0 1rem;
         box-sizing: border-box;
+      }
+      .table-responsive-wrapper {
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+        width: 100%;
+        margin-bottom: 2rem;
+        border-radius: 8px;
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        background-color: white;
       }
       .cart-table {
         width: 100%;
         border-collapse: collapse;
-        background-color: white;
-        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-        border-radius: 8px;
-        /* overflow: hidden; */ /* Removido daqui */
-        margin-bottom: 0; /* Removido daqui, vai para o wrapper */
+        min-width: 650px;
       }
       .cart-table th,
       .cart-table td {
-        padding: 12px 15px; /* Reduzido padding */
+        padding: 12px 15px;
         border-bottom: 1px solid #ddd;
         text-align: left;
         vertical-align: middle;
@@ -34,11 +38,11 @@
         font-weight: bold;
       }
       .cart-item-img {
-        width: 60px; /* Reduzido */
-        height: 60px; /* Reduzido */
+        width: 60px;
+        height: 60px;
         object-fit: cover;
         border-radius: 5px;
-        margin-right: 10px; /* Reduzido */
+        margin-right: 10px;
       }
       .item-details {
         display: flex;
@@ -46,6 +50,8 @@
       }
       .item-name {
         font-weight: bold;
+        white-space: normal;
+        min-width: 150px;
       }
       .quantity-controls {
         display: flex;
@@ -57,10 +63,10 @@
         border: 1px solid #ccc;
         color: #333;
         width: 28px;
-        height: 28px; /* Reduzido */
+        height: 28px;
         border-radius: 4px;
         cursor: pointer;
-        font-size: 1.1rem; /* Ajustado */
+        font-size: 1.1rem;
         line-height: 1;
         display: flex;
         align-items: center;
@@ -95,7 +101,7 @@
         padding: 2rem;
         border-radius: 8px;
         box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-        margin-top: 2rem; /* Adiciona espaço acima */
+        margin-top: 2rem;
       }
       .summary-header {
         display: flex;
@@ -129,7 +135,7 @@
         font-size: 1.2rem;
       }
 
-      /* --- ESTILOS PARA FLASH MESSAGES --- */
+      /* --- Estilos Flash Messages --- */
       .flash-messages {
         padding: 0;
         margin-bottom: 1.5rem;
@@ -153,27 +159,7 @@
         border-color: #f5c6cb;
       }
 
-      /* --- RESPONSIVIDADE PARA TABELA --- */
-      .table-responsive-wrapper {
-        overflow-x: auto; /* Habilita a rolagem horizontal */
-        -webkit-overflow-scrolling: touch; /* Melhora rolagem iOS */
-        width: 100%; /* Garante que o wrapper ocupe a largura disponível */
-        margin-bottom: 2rem; /* Mantém o espaço abaixo */
-        border-radius: 8px; /* Arredonda o wrapper */
-        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1); /* Sombra no wrapper */
-        background-color: white; /* Fundo branco no wrapper */
-      }
-      .cart-table {
-        min-width: 650px; /* Força rolagem em telas < 650px */
-        margin-bottom: 0; /* Remove margem da tabela */
-        box-shadow: none; /* Remove sombra da tabela */
-        border-radius: 0; /* Remove bordas da tabela */
-        overflow: visible; /* Garante que o conteúdo não seja cortado incorretamente */
-      }
-      .cart-table td:nth-child(2) .item-name {
-        white-space: normal;
-        min-width: 150px;
-      }
+      /* --- Media Query --- */
       @media (max-width: 768px) {
         .cart-table th:nth-child(3),
         .cart-table td:nth-child(3),
@@ -185,7 +171,7 @@
         .cart-table td:nth-child(6) {
           text-align: center;
           padding-left: 8px;
-          padding-right: 8px; /* Menor padding lateral */
+          padding-right: 8px;
         }
         .quantity-controls {
           justify-content: center;
@@ -193,129 +179,219 @@
         .cart-table th,
         .cart-table td {
           font-size: 0.9em;
-        } /* Reduz fonte geral */
+        }
         .item-name {
           font-size: 1em;
-        } /* Mantém nome um pouco maior */
+        }
         .cart-item-img {
           width: 50px;
           height: 50px;
           margin-right: 8px;
-        } /* Imagem menor */
+        }
       }
-      /* --- FIM RESPONSIVIDADE --- */
+      .loading-overlay { opacity: 0.5; pointer-events: none; transition: opacity 0.2s ease; }
+    </style>
     </style>
   </head>
-  <body>
+ <body>
     {{ template "_header.html" . }}
 
     <div class="container">
-      {{ if .FlashesSuccess }}
-      <div class="flash-messages">
-        {{ range .FlashesSuccess }}
-        <div class="flash flash-success">{{ . }}</div>
-        {{ end }}
-      </div>
-      {{ end }} {{ if .FlashesError }}
-      <div class="flash-messages">
-        {{ range .FlashesError }}
-        <div class="flash flash-error">{{ . }}</div>
-        {{ end }}
-      </div>
-      {{ end }}
       <h1>Meu Carrinho</h1>
 
-      {{ if .Items }}
-      <div class="table-responsive-wrapper">
-        <table class="cart-table">
-          <thead>
-            <tr>
-              <th colspan="2">Produto</th>
-              <th>Preço Unit.</th>
-              <th>Qtd.</th>
-              <th>Subtotal</th>
-              <th>Remover</th>
-            </tr>
-          </thead>
-          <tbody>
-            {{ range .Items }}
-            <tr>
-              <td>
-                <img
-                  src="{{ .Cupcake.ImagemURL }}"
-                  alt="{{ .Cupcake.Nome }}"
-                  class="cart-item-img"
-                />
-              </td>
-              <td><span class="item-name">{{ .Cupcake.Nome }}</span></td>
-              <td>R$ {{ printf "%.2f" .Cupcake.Preco }}</td>
-              <td>
-                <div class="quantity-controls">
-                  <form
-                    action="/carrinho/diminuir/{{ .Cupcake.ID }}"
-                    method="POST"
-                    style="margin: 0"
-                  >
-                    <input type="hidden" name="return_to" value="cart" />
-                    <button type="submit" class="quantity-btn">-</button>
-                  </form>
-                  <span class="quantity-display">{{ .Quantity }}</span>
-                  <form
-                    action="/carrinho/adicionar/{{ .Cupcake.ID }}"
-                    method="POST"
-                    style="margin: 0"
-                  >
-                    <input type="hidden" name="return_to" value="cart" />
-                    <button type="submit" class="quantity-btn">+</button>
-                  </form>
-                </div>
-              </td>
-              <td>R$ {{ printf "%.2f" .Subtotal }}</td>
-              <td class="remove-cell">
-                <form
-                  action="/carrinho/remover/{{ .Cupcake.ID }}"
-                  method="POST"
-                  class="remove-form"
-                >
-                  <button type="submit">&times;</button>
-                </form>
-              </td>
-            </tr>
-            {{ end }}
-          </tbody>
-        </table>
-      </div>
-      <div class="cart-summary">
-        <div class="summary-header">
-          <div class="total">
-            Total: <span>R$ {{ printf "%.2f" .Total }}</span>
-          </div>
-          <form action="/carrinho/limpar" method="POST" class="clear-cart-form">
-            <button type="submit" class="btn btn-secondary">
-              Limpar Carrinho
-            </button>
-          </form>
-        </div>
-        <a
-          href="/cliente/checkout"
-          class="btn btn-primary"
-          style="
-            display: block;
-            width: 100%;
-            text-align: center;
-            box-sizing: border-box;
-          "
-        >
-          Finalizar Compra
-        </a>
-      </div>
+      <div id="cart-container"> {{ if .Items }}
+          <div class="table-responsive-wrapper">
+              <table class="cart-table">
+                <thead>
+                  <tr>
+                    <th colspan="2">Produto</th>
+                    <th>Preço Unit.</th>
+                    <th>Qtd.</th>
+                    <th>Subtotal</th>
+                    <th>Remover</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {{ range .Items }}
+                  <tr data-item-id="{{ .Cupcake.ID }}" data-unit-price="{{ .Cupcake.Preco }}">
+                    <td><img src="{{ .Cupcake.ImagemURL }}" alt="{{ .Cupcake.Nome }}" class="cart-item-img"/></td>
+                    <td><span class="item-name">{{ .Cupcake.Nome }}</span></td>
+                    <td class="unit-price">R$ {{ printf "%.2f" .Cupcake.Preco }}</td>
+                    <td>
+                      <div class="quantity-controls">
+                        <form action="/carrinho/diminuir/{{ .Cupcake.ID }}" method="POST" style="margin: 0" class="ajax-cart-form" data-action="decrease">
+                          <button type="submit" class="quantity-btn">-</button>
+                        </form>
+                        <span class="quantity-display">{{ .Quantity }}</span>
+                        <form action="/carrinho/adicionar/{{ .Cupcake.ID }}" method="POST" style="margin: 0" class="ajax-cart-form" data-action="increase">
+                          <button type="submit" class="quantity-btn">+</button>
+                        </form>
+                      </div>
+                    </td>
+                    <td class="subtotal">R$ {{ printf "%.2f" .Subtotal }}</td>
+                    <td class="remove-cell">
+                      <form action="/carrinho/remover/{{ .Cupcake.ID }}" method="POST" class="remove-form ajax-cart-form" data-action="remove">
+                        <button type="submit">&times;</button>
+                      </form>
+                    </td>
+                  </tr>
+                  {{ end }}
+                </tbody>
+              </table>
+          </div> 
 
-      {{ else }}
-      <div class="empty-cart">
-        <p>Seu carrinho está vazio.</p>
-        <a href="/vitrine" class="btn btn-primary">Ver Produtos</a>
-      </div>
-      {{ end }}
-    </div>
-  </body>
+          <div class="cart-summary">
+            <div class="summary-header">
+              <div class="total-label"> Total: <span class="total-value">R$ {{ printf "%.2f" .Total }}</span> </div>
+              <form action="/carrinho/limpar" method="POST" class="clear-cart-form ajax-cart-form" data-action="clear">
+                <button type="submit" class="btn btn-secondary"> Limpar Carrinho </button>
+              </form>
+            </div>
+            <a href="/cliente/checkout" class="btn btn-primary" style="display: block; width: 100%; text-align: center; box-sizing: border-box;">
+              Finalizar Compra
+            </a>
+          </div>
+
+          {{ else }}
+          <div class="empty-cart">
+             <p>Seu carrinho está vazio.</p>
+             <a href="/vitrine" class="btn btn-primary">Ver Produtos</a>
+          </div>
+          {{ end }}
+      </div> </div>
+
+    <template id="empty-cart-template">
+        <div class="empty-cart">
+           <p>Seu carrinho está vazio.</p>
+           <a href="/vitrine" class="btn btn-primary">Ver Produtos</a>
+        </div>
+    </template>
+
+
+    <script>
+        // Função para atualizar o badge do header
+        const updateCartBadge = (count) => {
+            const badges = document.querySelectorAll('.cart-badge, .cart-badge-mobile');
+            badges.forEach(badge => {
+                if (badge) {
+                    if (count > 0) {
+                        badge.textContent = count;
+                        badge.style.display = 'inline-block';
+                    } else {
+                        badge.style.display = 'none';
+                    }
+                }
+            });
+        };
+
+        // Função para formatar moeda (simples)
+        const formatCurrency = (value) => {
+            // Arredonda para 2 casas decimais
+            const roundedValue = Math.round(value * 100) / 100;
+            return `R$ ${roundedValue.toFixed(2).replace('.', ',')}`;
+        };
+
+        // Lógica principal do Carrinho AJAX
+        document.addEventListener('DOMContentLoaded', () => {
+            const cartContainer = document.getElementById('cart-container');
+            if (!cartContainer) return;
+
+            // Função para recalcular o total geral
+            const recalculateTotal = () => {
+                let newTotal = 0;
+                const subtotals = cartContainer.querySelectorAll('td.subtotal');
+                
+                subtotals.forEach(td => {
+                    newTotal += parseFloat(td.textContent.replace('R$', '').replace(',', '.')) || 0;
+                });
+                
+                const totalElement = cartContainer.querySelector('.total-value');
+                if (totalElement) {
+                    totalElement.textContent = formatCurrency(newTotal);
+                }
+                
+                // Se não houver mais linhas de item (subtotais.length === 0), mostra "carrinho vazio"
+                if (subtotals.length === 0) {
+                    const template = document.getElementById('empty-cart-template');
+                    if (template) {
+                        cartContainer.innerHTML = template.innerHTML;
+                    }
+                }
+            };
+
+            // Adiciona listener a todos os formulários AJAX
+            cartContainer.querySelectorAll('.ajax-cart-form').forEach(form => {
+                form.addEventListener('submit', (e) => {
+                    e.preventDefault();
+                    
+                    const url = form.action;
+                    const method = form.method;
+                    const action = form.dataset.action;
+                    const row = form.closest('tr');
+                    
+                    cartContainer.classList.add('loading-overlay');
+
+                    fetch(url, {
+                        method: method,
+                        headers: { 'X-Requested-With': 'XMLHttpRequest' }
+                    })
+                    .then(response => response.json()) // Assume que sempre retorna JSON
+                    .then(data => {
+                        if (data.success) {
+                            // =============================================
+                            //    1. CORREÇÃO: ATUALIZA O BADGE AQUI
+                            // =============================================
+                            if (data.newCartCount !== undefined) {
+                                updateCartBadge(data.newCartCount);
+                            }
+                            
+                            // =============================================
+                            //    2. CORREÇÃO: LÓGICA PARA 'CLEAR'
+                            // =============================================
+                            if (action === 'clear') {
+                                const template = document.getElementById('empty-cart-template');
+                                if (template) {
+                                    cartContainer.innerHTML = template.innerHTML;
+                                }
+                                // Não precisa recalcular, pois o container foi substituído
+                                return; // Sai da função .then()
+                            }
+                            // =============================================
+
+                            // Lógica existente para +/-/X
+                            if (action === 'increase' || action === 'decrease') {
+                                const qtyDisplay = row.querySelector('.quantity-display');
+                                let newQty = parseInt(qtyDisplay.textContent);
+                                newQty = (action === 'increase') ? newQty + 1 : newQty - 1;
+
+                                if (newQty <= 0) {
+                                    row.remove();
+                                } else {
+                                    qtyDisplay.textContent = newQty;
+                                    const unitPrice = parseFloat(row.dataset.unitPrice);
+                                    const subtotalCell = row.querySelector('.subtotal');
+                                    subtotalCell.textContent = formatCurrency(unitPrice * newQty);
+                                }
+                            } else if (action === 'remove') {
+                                row.remove();
+                            }
+                            
+                            recalculateTotal(); // Recalcula o total após as mudanças
+
+                        } else {
+                            alert("Erro: " + (data.error || "Ação falhou."));
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Erro no fetch do carrinho:', error);
+                        alert("Erro de conexão. Tente novamente.");
+                    })
+                    .finally(() => {
+                        cartContainer.classList.remove('loading-overlay');
+                    });
+                });
+            });
+        });
+    </script>
+</body>
 </html>
