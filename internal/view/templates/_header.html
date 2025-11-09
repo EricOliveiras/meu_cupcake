@@ -19,8 +19,7 @@
     <a href="/perfil">Meu Perfil</a>
     <a href="/logout" class="btn btn-primary">Sair</a>
 
-    {{ else if and .IsLoggedIn (eq .User.Tipo "cliente") }} {{ if ne .ActivePage
-    "vitrine" }}
+    {{ else if and .IsLoggedIn (eq .User.Tipo "cliente") }}
     <a href="/carrinho" class="cart-link">
       <span class="cart-icon">🛒</span>
       <span
@@ -34,9 +33,11 @@
         {{
         end
         }}
-        >{{ .CartItemCount }}</span
       >
+        {{ .CartItemCount }}
+      </span>
     </a>
+    {{ if ne .ActivePage "vitrine" }}
     <a href="/vitrine" class="btn btn-secondary">Vitrine</a>
     {{ end }}
     <a href="/perfil" class="btn btn-secondary">Meu Perfil</a>
@@ -58,8 +59,9 @@
         {{
         end
         }}
-        >{{ .CartItemCount }}</span
       >
+        {{ .CartItemCount }}
+      </span>
     </a>
     <a href="/login" class="btn btn-secondary">Entrar</a>
     <a href="/cadastro" class="btn btn-primary">Cadastrar</a>
@@ -82,8 +84,9 @@
         {{
         end
         }}
-        >{{ .CartItemCount }}</span
       >
+        {{ .CartItemCount }}
+      </span>
     </a>
     {{ end }}
     <button
@@ -113,7 +116,9 @@
     <a href="/logout" class="btn btn-primary btn-mobile">Sair</a>
 
     {{ else if and .IsLoggedIn (eq .User.Tipo "cliente") }} {{ if ne .ActivePage
-    "vitrine" }}<a href="/vitrine">Vitrine</a>{{ end }}
+    "vitrine" }}
+    <a href="/vitrine">Vitrine</a>
+    {{ end }}
     <a href="/carrinho" class="cart-link">
       <span class="cart-text">Carrinho</span>
       <span
@@ -127,16 +132,18 @@
         {{
         end
         }}
-        >{{ .CartItemCount }}</span
       >
+        {{ .CartItemCount }}
+      </span>
     </a>
     <a href="/cliente/dashboard">Minha Conta</a>
     <a href="/perfil">Meu Perfil</a>
     <div class="nav-separator"></div>
     <a href="/logout" class="btn btn-primary btn-mobile">Sair</a>
 
-    {{ else }} {{ if ne .ActivePage "vitrine" }}<a href="/vitrine">Vitrine</a>{{
-    end }}
+    {{ else }} {{ if ne .ActivePage "vitrine" }}
+    <a href="/vitrine">Vitrine</a>
+    {{ end }}
     <a href="/carrinho" class="cart-link">
       <span class="cart-text">Carrinho</span>
       <span
@@ -150,8 +157,9 @@
         {{
         end
         }}
-        >{{ .CartItemCount }}</span
       >
+        {{ .CartItemCount }}
+      </span>
     </a>
     <div class="nav-separator"></div>
     <a href="/login" class="btn btn-secondary btn-mobile">Entrar</a>
@@ -220,7 +228,7 @@
     background: #5a6268;
   }
 
-  /* CART STYLE (✅ Restaurado) */
+  /* CART STYLE */
   .cart-link {
     position: relative;
     display: inline-flex;
@@ -265,16 +273,15 @@
   }
   .hamburger-btn {
     display: flex;
-    flex-direction: column; /* ✅ força as 3 linhas ficarem empilhadas */
+    flex-direction: column;
     justify-content: center;
     align-items: center;
-    gap: 4px; /* espaçamento entre as linhas */
+    gap: 4px;
     background: none;
     border: none;
     cursor: pointer;
     padding: 10px;
   }
-
   .hamburger-btn span {
     width: 25px;
     height: 3px;
