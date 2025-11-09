@@ -11,28 +11,29 @@ import (
 type StatusOrder string
 
 const (
-	StatusPendente  StatusOrder = "pendente"
-	StatusPago      StatusOrder = "pago"
-	StatusFalhou    StatusOrder = "falhou"
-	StatusEnviado   StatusOrder = "enviado"
-	StatusEntregue  StatusOrder = "entregue"
-	StatusCancelado StatusOrder = "cancelado"
+	StatusPendente   StatusOrder = "pendente"
+	StatusPago       StatusOrder = "pago"
+	StatusFalhou     StatusOrder = "falhou"
+	StatusPreparando StatusOrder = "preparando" 
+	StatusEnviado    StatusOrder = "enviado"   
+	StatusEntregue   StatusOrder = "entregue"   
+	StatusCancelado  StatusOrder = "cancelado"  
 )
 
 // Order representa uma ordem de compra no sistema.
 type Order struct {
 	ID        uint        `gorm:"primaryKey"`
-	UsuarioID uint        `gorm:"not null"`             // Chave estrangeira para o usuário cliente
-	Usuario   Usuario     `gorm:"foreignKey:UsuarioID"` // Relacionamento com Usuario
+	UsuarioID uint        `gorm:"not null"`            
+	Usuario   Usuario     `gorm:"foreignKey:UsuarioID"` 
 	Status    StatusOrder `gorm:"type:varchar(20);not null;default:'pendente'"`
 	Total     float64     `gorm:"not null"`
 	// --- Informações do Pagamento ---
-	PagamentoMPID   *int64 `gorm:"uniqueIndex"` // ID do pagamento no Mercado Pago (ponteiro para ser opcional no início)
+	PagamentoMPID   *int64 `gorm:"uniqueIndex"` 
 	MetodoPagamento string // Ex: "credit_card"
 	Parcelas        int
 	// -------------------------------
-	ExternalReference string      `gorm:"uniqueIndex"`         // Nosso ID único para enviar ao MP
-	Items             []ItemOrder `gorm:"foreignKey:PedidoID"` // Um pedido tem muitos itens
+	ExternalReference string      `gorm:"uniqueIndex"`         
+	Items             []ItemOrder `gorm:"foreignKey:PedidoID"` 
 	CreatedAt         time.Time
 	UpdatedAt         time.Time
 	DeletedAt         gorm.DeletedAt `gorm:"index"`
