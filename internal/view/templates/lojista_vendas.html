@@ -10,7 +10,6 @@
       .container {
         max-width: 1100px;
         margin: 2rem auto;
-        /* --- 2. ADICIONADO PADDING LATERAL E BOX-SIZING --- */
         padding: 0 1rem;
         box-sizing: border-box;
       }
@@ -29,12 +28,12 @@
         padding-bottom: 1rem;
         margin-bottom: 1rem;
         flex-wrap: wrap;
-        gap: 0.5rem 1rem; /* Espaçamento vertical e horizontal */
+        gap: 0.5rem 1rem; 
       }
       .pedido-header span {
         font-size: 0.9em;
         color: #555;
-        word-break: break-word; /* Garante que emails longos quebrem */
+        word-break: break-word; 
       }
       .status {
         font-weight: bold;
@@ -42,17 +41,44 @@
         border-radius: 15px;
         color: white;
         font-size: 0.85em;
-        flex-shrink: 0; /* Impede que o status encolha */
+        flex-shrink: 0; 
+        text-align: center; /* Adicionado para consistência */
       }
-      .status-pendente {
-        background-color: #ffc107;
-        color: #333;
+      .status-pendente { background-color: #ffc107; color: #333; }
+      .status-pago { background-color: #28a745; }
+      .status-falhou { background-color: #dc3545; }
+      .status-preparando { background-color: #17a2b8; } /* Cor nova */
+      .status-enviado { background-color: #007bff; } /* Cor nova */
+      .status-entregue { background-color: #6c757d; } /* Cor nova */
+      .status-cancelado { background-color: #6c757d; } /* Cor nova */
+
+      /* --- 1. CSS ATUALIZADO PARA O GERENCIADOR DE STATUS --- */
+      .status-container {
+          display: flex;
+          flex-wrap: wrap; /* Permite quebrar em telas pequenas se necessário */
+          align-items: center;
+          gap: 0.5rem 1rem; /* Espaço entre o span e o form */
+          justify-content: flex-start; /* Alinha à esquerda */
       }
-      .status-pago {
-        background-color: #28a745;
+      .status-display {
+         flex-shrink: 0; /* Impede o span de encolher */
       }
-      .status-falhou {
-        background-color: #dc3545;
+      .status-update-form {
+          display: flex;
+          align-items: center;
+          gap: 0.5rem;
+      }
+      .status-update-form select {
+          padding: 5px;
+          border: 1px solid #ccc;
+          border-radius: 4px;
+          font-size: 0.9em;
+          background-color: #fff; /* Garante fundo branco */
+      }
+      .status-update-form button {
+          padding: 5px 10px;
+          font-size: 0.85em;
+          flex-shrink: 0; /* Impede botão de encolher */
       }
 
       .pedido-item {
@@ -95,33 +121,59 @@
 
       /* --- 3. ADICIONADA MEDIA QUERY PARA RESPONSIVIDADE --- */
       @media (max-width: 768px) {
-        .container {
-          margin-top: 1rem;
-          margin-bottom: 1rem;
-        }
-        h1 {
-          font-size: 1.8rem;
-        }
-        .pedido-card {
-          padding: 1rem; /* Menos padding no card */
-        }
-        .pedido-header {
-          flex-direction: column; /* Empilha os itens do cabeçalho */
-          align-items: flex-start; /* Alinha à esquerda */
-          gap: 0.5rem; /* Espaçamento entre os itens empilhados */
-          margin-bottom: 1.5rem; /* Mais espaço abaixo do header */
-        }
-        .pedido-item {
-          align-items: flex-start; /* Alinha imagem e texto no topo */
-        }
-        .item-info {
-          font-size: 1em; /* Fonte um pouco maior para leitura no mobile */
-        }
-        .pedido-total {
-          font-size: 1.2em;
-        }
+          .container { margin-top: 1rem; margin-bottom: 1rem; }
+          h1 { font-size: 1.8rem; }
+          .pedido-card { padding: 1rem; }
+          .pedido-header {
+              flex-direction: column; 
+              align-items: flex-start; 
+              gap: 0.8rem; /* Aumenta gap vertical */
+              margin-bottom: 1.5rem; 
+          }
+          /* Agora o container de status se adapta */
+          .status-container {
+              width: 100%;
+              flex-direction: column; /* Empilha o span e o form */
+              align-items: stretch; /* Ocupa 100% da largura */
+              gap: 0.5rem;
+          }
+          .status-display {
+              margin-right: 0;
+              margin-bottom: 0.25rem; /* Pequeno espaço */
+              order: 1; /* (Opcional) Coloca o status primeiro */
+          }
+          .status-update-form {
+              width: 100%;
+              flex-direction: column; /* Empilha o select e o botão */
+              gap: 0.5rem;
+              order: 2; /* (Opcional) Coloca o form depois */
+          }
+          .status-update-form select,
+          .status-update-form button {
+              width: 100%;
+              box-sizing: border-box;
+          }
+          
+          .pedido-item { align-items: flex-start; }
+          .item-info { font-size: 1em; }
+          .pedido-total { font-size: 1.2em; }
       }
-      /* --- FIM DA CORREÇÃO --- */
+
+      .status-form {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+      }
+      .status-form select {
+        padding: 5px;
+        border: 1px solid #ccc;
+        border-radius: 4px;
+        font-size: 0.9em;
+      }
+      .status-form button {
+        padding: 5px 10px;
+        font-size: 0.85em;
+      }
     </style>
   </head>
   <body>
@@ -132,37 +184,52 @@
 
       {{ if .ErrorMsg }}
       <p style="color: red; text-align: center">{{ .ErrorMsg }}</p>
-      {{ end }} {{ if .Vendas }} {{ range .Vendas }}
-      <div class="pedido-card">
-        <div class="pedido-header">
-          <span>Pedido #{{ .ID }}</span>
-          <span>Data: {{ .CreatedAt.Format "02/01/2006 15:04" }}</span>
-          <span>Cliente: {{ .Usuario.Nome }} ({{ .Usuario.Email }})</span>
-          <span class="status status-{{ .Status }}">{{ .Status }}</span>
-          {{ if .PagamentoMPID }}<span>MP ID: {{ .PagamentoMPID }}</span>{{ end
-          }}
-        </div>
-        {{ range .Items }}
-        <div class="pedido-item">
-          <img
-            src="{{ .Cupcake.ImagemURL }}"
-            alt="{{ .Cupcake.Nome }}"
-            class="item-img"
-          />
-          <div class="item-info">
-            <strong>{{ .Cupcake.Nome }}</strong><br />
-            {{ .Quantidade }} x R$ {{ printf "%.2f" .PrecoUnitario }}
+      {{ end }} 
+      
+      {{ if .Vendas }} 
+          {{ range .Vendas }}
+          <div class="pedido-card">
+            <div class="pedido-header">
+              <span>Pedido #{{ .ID }}</span>
+              <span>Data: {{ .CreatedAt.Format "02/01/2006 15:04" }}</span>
+              <span>Cliente: {{ .Usuario.Nome }} ({{ .Usuario.Email }})</span>
+              {{ if .PagamentoMPID }}<span>MP ID: {{ .PagamentoMPID }}</span>{{ end }}
+
+              <div class="status-container">
+                  <span class="status status-{{ .Status }} status-display">{{ .Status }}</span>
+                  
+                  <form action="/lojista/vendas/status/{{ .ID }}" method="POST" class="status-update-form">
+                      <select name="status">
+                          <option value="pendente" {{ if eq .Status "pendente" }}selected{{ end }}>Pendente</option>
+                          <option value="pago" {{ if eq .Status "pago" }}selected{{ end }}>Pago (Recebido)</option>
+                          <option value="preparando" {{ if eq .Status "preparando" }}selected{{ end }}>Preparando</option>
+                          <option value="enviado" {{ if eq .Status "enviado" }}selected{{ end }}>Enviado</option>
+                          <option value="entregue" {{ if eq .Status "entregue" }}selected{{ end }}>Entregue</option>
+                          <option value="cancelado" {{ if eq .Status "cancelado" }}selected{{ end }}>Cancelado</option>
+                          <option value="falhou" {{ if eq .Status "falhou" }}selected{{ end }}>Falhou</option>
+                      </select>
+                      <button type="submit" class="btn btn-secondary">Mudar</button>
+                  </form>
+              </div>
+              </div>
+            {{ range .Items }}
+            <div class="pedido-item">
+              <img src="{{ .Cupcake.ImagemURL }}" alt="{{ .Cupcake.Nome }}" class="item-img"/>
+              <div class="item-info">
+                <strong>{{ .Cupcake.Nome }}</strong><br />
+                {{ .Quantidade }} x R$ {{ printf "%.2f" .PrecoUnitario }}
+              </div>
+              <span class="item-subtotal">R$ {{ printf "%.2f" .Subtotal }}</span>
+            </div>
+            {{ end }}
+            <div class="pedido-total">Total: R$ {{ printf "%.2f" .Total }}</div>
           </div>
-          <span class="item-subtotal">R$ {{ printf "%.2f" .Subtotal }}</span>
-        </div>
-        {{ end }}
-        <div class="pedido-total">Total: R$ {{ printf "%.2f" .Total }}</div>
-      </div>
-      {{ end }} {{ else }}
-      <div class="empty-state">
-        <p>Nenhuma venda registrada ainda.</p>
-      </div>
+          {{ end }} 
+      {{ else }}
+          <div class="empty-state">
+            <p>Nenhuma venda registrada ainda.</p>
+          </div>
       {{ end }}
     </div>
-  </body>
+</body>
 </html>
