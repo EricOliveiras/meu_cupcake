@@ -2,65 +2,153 @@
 <html lang="pt-br">
   <head>
     <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Perfil do Lojista - Meu Cupcake</title>
-    <link rel="icon" type="image/png" href="/static/images/favicon.png" />
+    <link rel="stylesheet" href="/static/css/style.css" />
+
     <style>
       body {
         font-family: sans-serif;
         background-color: #f9f9f9;
         color: #333;
         margin: 0;
-        padding: 2rem;
       }
       .container {
         max-width: 800px;
-        margin: 0 auto;
+        margin: 2rem auto;
         background-color: white;
-        padding: 2rem;
+        padding: 2rem 1rem;
         border-radius: 8px;
         box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        box-sizing: border-box;
       }
       h1 {
         color: #ff69b4;
         border-bottom: 2px solid #f0f0f0;
         padding-bottom: 1rem;
       }
+      /* Adicionado h2 para subseções */
+      h2 {
+        font-size: 1.2rem;
+        color: #555;
+        margin-top: 2rem;
+        margin-bottom: 0.5rem;
+        border-bottom: 1px solid #eee;
+        padding-bottom: 0.5rem;
+      }
       .profile-info p {
         font-size: 1.1rem;
         line-height: 1.6;
+        word-break: break-all;
       }
       .profile-info strong {
         color: #555;
       }
       .actions {
         margin-top: 2rem;
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.5rem;
       }
-      .btn {
-        text-decoration: none;
-        padding: 10px 20px;
+
+      /* Estilos Flash Messages */
+      .flash-messages {
+        padding: 0;
+        margin-bottom: 1.5rem;
+      }
+      .flash {
+        padding: 1rem;
+        margin-bottom: 1rem;
         border-radius: 5px;
-        font-weight: bold;
+        border: 1px solid transparent;
+        text-align: center;
+        font-weight: 700;
       }
-      .btn-secondary {
-        background-color: #6c757d;
-        color: white;
+      .flash-success {
+        color: #155724;
+        background-color: #d4edda;
+        border-color: #c3e6cb;
       }
-      .btn-secondary:hover {
-        background-color: #5a6268;
+      .flash-error {
+        color: #721c24;
+        background-color: #f8d7da;
+        border-color: #f5c6cb;
+      }
+
+      /* (Estilos de .btn, .btn-secondary, .btn-primary - presumindo que estão no style.css) */
+
+      @media (max-width: 768px) {
+        .container {
+          margin: 1rem;
+          padding: 1.5rem;
+        }
+        h1 {
+          font-size: 1.8rem;
+          padding-bottom: 0.5rem;
+          margin-bottom: 1rem;
+        }
+        h2 {
+          font-size: 1.1rem;
+        }
+        .profile-info p {
+          font-size: 1rem;
+        }
+        .actions {
+          flex-direction: column;
+        }
+        .actions .btn {
+          width: 100%;
+          text-align: center;
+          box-sizing: border-box;
+        }
       }
     </style>
   </head>
   <body>
+    {{ template "_header.html" . }}
+
     <div class="container">
       <h1>Perfil do Lojista</h1>
+
+      {{ if .FlashesSuccess }}
+      <div class="flash-messages">
+        {{ range .FlashesSuccess }}
+        <div class="flash flash-success">{{ . }}</div>
+        {{ end }}
+      </div>
+      {{ end }} {{ if .FlashesError }}
+      <div class="flash-messages">
+        {{ range .FlashesError }}
+        <div class="flash flash-error">{{ . }}</div>
+        {{ end }}
+      </div>
+      {{ end }}
+
       <div class="profile-info">
+        <h2>Dados Pessoais</h2>
         <p><strong>Nome:</strong> {{ .User.Nome }}</p>
         <p><strong>Email:</strong> {{ .User.Email }}</p>
+        <p><strong>Telefone:</strong> {{ .User.Telefone }}</p>
+
+        <h2>Endereço (Comercial)</h2>
+        {{ if .User.CEP }}
+        <p><strong>CEP:</strong> {{ .User.CEP }}</p>
+        <p><strong>Rua:</strong> {{ .User.Rua }}, Nº {{ .User.Numero }}</p>
+        <p><strong>Complemento:</strong> {{ .User.Complemento }}</p>
+        <p><strong>Bairro:</strong> {{ .User.Bairro }}</p>
+        <p>
+          <strong>Cidade/Estado:</strong> {{ .User.Cidade }} - {{ .User.Estado
+          }}
+        </p>
+        {{ else }}
+        <p>Você ainda não cadastrou um endereço.</p>
+        {{ end }}
       </div>
       <div class="actions">
         <a href="/lojista/dashboard" class="btn btn-secondary"
           >Voltar ao Painel</a
         >
+        <a href="/perfil/editar" class="btn btn-primary">Editar Perfil</a>
       </div>
     </div>
   </body>
