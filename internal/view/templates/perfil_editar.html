@@ -1,0 +1,334 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Editar Perfil - Meu Cupcake</title>
+    <link rel="stylesheet" href="/static/css/style.css" />
+    <style>
+      .container {
+        max-width: 600px;
+        margin: 2rem auto;
+        padding: 0 1rem;
+        box-sizing: border-box;
+      }
+      .form-container {
+        background-color: white;
+        padding: 2rem;
+        border-radius: 8px;
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+      }
+      h1 {
+        color: #ff69b4;
+        text-align: center;
+        margin-bottom: 1.5rem;
+      }
+      .form-group {
+        margin-bottom: 1.2rem;
+      }
+      label {
+        display: block;
+        margin-bottom: 0.5rem;
+        font-weight: bold;
+      }
+      input[type="text"],
+      input[type="email"],
+      input[type="tel"] {
+        /* Adicionado tipo 'tel' */
+        width: 100%;
+        padding: 10px;
+        border: 1px solid #ccc;
+        border-radius: 4px;
+        box-sizing: border-box;
+        height: 40px;
+      }
+      /* Estilo para campos readonly (preenchidos pelo CEP) */
+      input[readonly] {
+        background-color: #f0f0f0;
+        cursor: not-allowed;
+      }
+
+      .form-actions {
+        display: flex;
+        justify-content: flex-end;
+        gap: 1rem;
+        margin-top: 2rem;
+      }
+      /* Grid para campos de endereço (CEP/Telefone, etc.) */
+      .form-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 1rem;
+      }
+
+      /* Estilos Flash Messages */
+      .flash-messages {
+        padding: 0;
+        margin-bottom: 1.5rem;
+      }
+      .flash {
+        padding: 1rem;
+        margin-bottom: 1rem;
+        border-radius: 5px;
+        border: 1px solid transparent;
+        text-align: center;
+        font-weight: 700;
+      }
+      .flash-success {
+        color: #155724;
+        background-color: #d4edda;
+        border-color: #c3e6cb;
+      }
+      .flash-error {
+        color: #721c24;
+        background-color: #f8d7da;
+        border-color: #f5c6cb;
+      }
+
+      @media (max-width: 768px) {
+        .container {
+          margin: 1rem;
+        }
+        h1 {
+          font-size: 1.8rem;
+        }
+        .form-container {
+          padding: 1.5rem;
+        }
+        .form-actions {
+          flex-direction: column-reverse;
+        }
+        .form-actions .btn {
+          width: 100%;
+          box-sizing: border-box;
+          text-align: center;
+        }
+        /* Desfaz o grid em telas pequenas */
+        .form-grid {
+          grid-template-columns: 1fr;
+          gap: 0; /* Remove gap do grid, .form-group já tem margin-bottom */
+        }
+      }
+    </style>
+  </head>
+  <body>
+    {{ template "_header.html" . }}
+
+    <div class="container">
+      <div class="form-container">
+        <h1>Editar Perfil</h1>
+
+        {{ if .FlashesSuccess }}
+        <div class="flash-messages">
+          {{ range .FlashesSuccess }}
+          <div class="flash flash-success">{{ . }}</div>
+          {{ end }}
+        </div>
+        {{ end }} {{ if .FlashesError }}
+        <div class="flash-messages">
+          {{ range .FlashesError }}
+          <div class="flash flash-error">{{ . }}</div>
+          {{ end }}
+        </div>
+        {{ end }}
+
+        <form action="/perfil/editar" method="POST">
+          <div class="form-grid">
+            <div class="form-group">
+              <label for="nome">Nome</label>
+              <input
+                type="text"
+                id="nome"
+                name="nome"
+                value="{{ .User.Nome }}"
+                required
+              />
+            </div>
+            <div class="form-group">
+              <label for="email">E-mail</label>
+              <input
+                type="email"
+                id="email"
+                name="email"
+                value="{{ .User.Email }}"
+                required
+              />
+            </div>
+          </div>
+
+          <hr style="border: 0; border-top: 1px solid #eee; margin: 2rem 0" />
+
+          <div class="form-grid">
+            <div class="form-group">
+              <label for="telefone">Telefone</label>
+              <input
+                type="tel"
+                id="telefone"
+                name="telefone"
+                value="{{ .User.Telefone }}"
+                placeholder="(11) 98765-4321"
+              />
+            </div>
+            <div class="form-group">
+              <label for="cep">CEP</label>
+              <input
+                type="text"
+                id="cep"
+                name="cep"
+                value="{{ .User.CEP }}"
+                placeholder="00000-000"
+              />
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label for="rua">Rua</label>
+            <input
+              type="text"
+              id="rua"
+              name="rua"
+              value="{{ .User.Rua }}"
+              readonly
+            />
+          </div>
+
+          <div class="form-grid">
+            <div class="form-group">
+              <label for="numero">Número</label>
+              <input
+                type="text"
+                id="numero"
+                name="numero"
+                value="{{ .User.Numero }}"
+              />
+            </div>
+            <div class="form-group">
+              <label for="complemento">Complemento</label>
+              <input
+                type="text"
+                id="complemento"
+                name="complemento"
+                value="{{ .User.Complemento }}"
+                placeholder="Apto, Bloco, Casa"
+              />
+            </div>
+          </div>
+
+          <div class="form-grid">
+            <div class="form-group">
+              <label for="bairro">Bairro</label>
+              <input
+                type="text"
+                id="bairro"
+                name="bairro"
+                value="{{ .User.Bairro }}"
+                readonly
+              />
+            </div>
+            <div class="form-group">
+              <label for="cidade">Cidade</label>
+              <input
+                type="text"
+                id="cidade"
+                name="cidade"
+                value="{{ .User.Cidade }}"
+                readonly
+              />
+            </div>
+            <div class="form-group">
+              <label for="estado">Estado (UF)</label>
+              <input
+                type="text"
+                id="estado"
+                name="estado"
+                value="{{ .User.Estado }}"
+                readonly
+              />
+            </div>
+          </div>
+
+          <div class="form-actions">
+            <a href="/perfil" class="btn btn-secondary">Cancelar</a>
+            <button type="submit" class="btn btn-primary">
+              Salvar Alterações
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <script>
+      document.addEventListener("DOMContentLoaded", () => {
+        const cepInput = document.getElementById("cep");
+        const ruaInput = document.getElementById("rua");
+        const bairroInput = document.getElementById("bairro");
+        const cidadeInput = document.getElementById("cidade");
+        const estadoInput = document.getElementById("estado");
+        const numeroInput = document.getElementById("numero"); // Para focar
+
+        if (cepInput) {
+          // Adiciona o listener para o evento 'blur' (quando o usuário sai do campo)
+          cepInput.addEventListener("blur", buscaCEP);
+        }
+
+        function limpaFormulario() {
+          ruaInput.value = "";
+          bairroInput.value = "";
+          cidadeInput.value = "";
+          estadoInput.value = "";
+        }
+
+        function buscaCEP() {
+          let cep = cepInput.value.replace(/\D/g, ""); // Remove caracteres não numéricos
+
+          // Verifica se o CEP tem 8 dígitos
+          if (cep.length === 8) {
+            // Define campos como "carregando..."
+            ruaInput.value = "Buscando...";
+            bairroInput.value = "Buscando...";
+            cidadeInput.value = "Buscando...";
+            estadoInput.value = "...";
+
+            // Cria a URL da API ViaCEP
+            const url = `https://viacep.com.br/ws/${cep}/json/`;
+
+            // Faz a requisição Fetch
+            fetch(url)
+              .then((response) => response.json())
+              .then((data) => {
+                if (data.erro) {
+                  // CEP não encontrado
+                  console.log("CEP não encontrado.");
+                  limpaFormulario();
+                  cepInput.value = "";
+                  alert("CEP não encontrado. Por favor, verifique.");
+                } else {
+                  // Preenche os campos com os dados
+                  ruaInput.value = data.logradouro;
+                  bairroInput.value = data.bairro;
+                  cidadeInput.value = data.localidade;
+                  estadoInput.value = data.uf;
+
+                  // Move o foco para o campo "Número"
+                  if (numeroInput) {
+                    numeroInput.focus();
+                  }
+                }
+              })
+              .catch((error) => {
+                console.error("Erro ao buscar CEP:", error);
+                limpaFormulario();
+                alert("Não foi possível buscar o CEP. Tente novamente.");
+              });
+          } else {
+            // CEP inválido (menos de 8 dígitos)
+            if (cep.length > 0) {
+              // Só limpa se algo foi digitado
+              limpaFormulario();
+            }
+          }
+        }
+      });
+    </script>
+  </body>
+</html>
