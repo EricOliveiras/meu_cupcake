@@ -1,78 +1,175 @@
 {{ define "_header.html" }}
 <header class="main-header">
   <div class="logo">
-    {{/* Lógica do Logo: link dinâmico */}} {{ if and .IsLoggedIn (eq .User.Tipo
-    "cliente") }}<a href="/cliente/dashboard">Meu Cupcake</a> {{ else if and
-    .IsLoggedIn (eq .User.Tipo "lojista") }}<a href="/lojista/dashboard"
-      >Meu Cupcake</a
-    >
-    {{ else }}<a href="/">Meu Cupcake</a>
+    {{ if and .IsLoggedIn (eq .User.Tipo "cliente") }}
+    <a href="/cliente/dashboard">Meu Cupcake</a>
+    {{ else if and .IsLoggedIn (eq .User.Tipo "lojista") }}
+    <a href="/lojista/dashboard">Meu Cupcake</a>
+    {{ else }}
+    <a href="/">Meu Cupcake</a>
     {{ end }}
   </div>
 
-  <nav id="nav-menu" class="nav-links" aria-hidden="true">
-    {{/* Lógica Condicional ÚNICA, DENTRO da nav */}} {{ if and .IsLoggedIn (eq
-    .User.Tipo "lojista") }}
+  <!-- NAV DESKTOP -->
+  <nav class="nav-links-desktop" aria-label="Navegação Principal">
+    {{ if and .IsLoggedIn (eq .User.Tipo "lojista") }}
     <a href="/lojista/dashboard">Painel</a>
     <a href="/lojista/vendas">Vendas</a>
     <a href="/lojista/cupcakes">Cupcakes</a>
+    <a href="/perfil">Meu Perfil</a>
+    <a href="/logout" class="btn btn-primary">Sair</a>
+
+    {{ else if and .IsLoggedIn (eq .User.Tipo "cliente") }} {{ if ne .ActivePage
+    "vitrine" }}
+    <a href="/carrinho" class="cart-link">
+      <span class="cart-icon">🛒</span>
+      <span
+        class="cart-badge"
+        {{
+        if
+        eq
+        .CartItemCount
+        0
+        }}style="display:none;"
+        {{
+        end
+        }}
+        >{{ .CartItemCount }}</span
+      >
+    </a>
+    <a href="/vitrine" class="btn btn-secondary">Vitrine</a>
+    {{ end }}
+    <a href="/perfil" class="btn btn-secondary">Meu Perfil</a>
+    <a href="/logout" class="btn btn-primary">Sair</a>
+
+    {{ else }} {{ if ne .ActivePage "vitrine" }}
+    <a href="/vitrine" class="btn btn-secondary">Vitrine</a>
+    {{ end }}
+    <a href="/carrinho" class="cart-link">
+      <span class="cart-icon">🛒</span>
+      <span
+        class="cart-badge"
+        {{
+        if
+        eq
+        .CartItemCount
+        0
+        }}style="display:none;"
+        {{
+        end
+        }}
+        >{{ .CartItemCount }}</span
+      >
+    </a>
+    <a href="/login" class="btn btn-secondary">Entrar</a>
+    <a href="/cadastro" class="btn btn-primary">Cadastrar</a>
+    {{ end }}
+  </nav>
+
+  <!-- MOBILE CONTROLS -->
+  <div class="mobile-controls">
+    {{ if not (and .IsLoggedIn (eq .User.Tipo "lojista")) }}
+    <a href="/carrinho" class="cart-link cart-link-mobile">
+      <span class="cart-icon">🛒</span>
+      <span
+        class="cart-badge"
+        {{
+        if
+        eq
+        .CartItemCount
+        0
+        }}style="display:none;"
+        {{
+        end
+        }}
+        >{{ .CartItemCount }}</span
+      >
+    </a>
+    {{ end }}
+    <button
+      id="hamburger-btn"
+      class="hamburger-btn"
+      aria-label="Abrir menu"
+      aria-expanded="false"
+    >
+      <span></span>
+      <span></span>
+      <span></span>
+    </button>
+  </div>
+
+  <!-- MOBILE MENU -->
+  <nav id="nav-menu-mobile" class="nav-links-mobile" aria-hidden="true">
+    <button id="close-btn" class="close-btn" aria-label="Fechar menu">
+      &times;
+    </button>
+
+    {{ if and .IsLoggedIn (eq .User.Tipo "lojista") }}
+    <a href="/lojista/dashboard">Painel</a>
+    <a href="/lojista/vendas">Vendas</a>
+    <a href="/lojista/cupcakes">Cupcakes</a>
+    <a href="/perfil">Meu Perfil</a>
     <div class="nav-separator"></div>
-    {{/* Separador */}}
     <a href="/logout" class="btn btn-primary btn-mobile">Sair</a>
 
     {{ else if and .IsLoggedIn (eq .User.Tipo "cliente") }} {{ if ne .ActivePage
-    "vitrine" }} {{ end }}
+    "vitrine" }}<a href="/vitrine">Vitrine</a>{{ end }}
     <a href="/carrinho" class="cart-link">
-      <span class="cart-icon">🛒</span>
       <span class="cart-text">Carrinho</span>
-      {{ if gt .CartItemCount 0 }}
-      <span class="cart-badge">{{ .CartItemCount }}</span>
-      {{ end }}
+      <span
+        class="cart-badge-mobile"
+        {{
+        if
+        eq
+        .CartItemCount
+        0
+        }}style="display:none;"
+        {{
+        end
+        }}
+        >{{ .CartItemCount }}</span
+      >
     </a>
     <a href="/cliente/dashboard">Minha Conta</a>
     <a href="/perfil">Meu Perfil</a>
     <div class="nav-separator"></div>
     <a href="/logout" class="btn btn-primary btn-mobile">Sair</a>
 
-    {{ else }} {{ if ne .ActivePage "vitrine" }}
-    <a href="/vitrine">Vitrine</a>
-    {{ end }}
+    {{ else }} {{ if ne .ActivePage "vitrine" }}<a href="/vitrine">Vitrine</a>{{
+    end }}
     <a href="/carrinho" class="cart-link">
-      <span class="cart-icon">🛒</span>
       <span class="cart-text">Carrinho</span>
-      {{ if gt .CartItemCount 0 }}
-      <span class="cart-badge">{{ .CartItemCount }}</span>
-      {{ end }}
+      <span
+        class="cart-badge-mobile"
+        {{
+        if
+        eq
+        .CartItemCount
+        0
+        }}style="display:none;"
+        {{
+        end
+        }}
+        >{{ .CartItemCount }}</span
+      >
     </a>
     <div class="nav-separator"></div>
     <a href="/login" class="btn btn-secondary btn-mobile">Entrar</a>
     <a href="/cadastro" class="btn btn-primary btn-mobile">Cadastrar</a>
     {{ end }}
   </nav>
-
-  <button
-    id="hamburger-btn"
-    class="hamburger-btn"
-    aria-label="Abrir menu"
-    aria-expanded="false"
-  >
-    <span></span>
-    <span></span>
-    <span></span>
-  </button>
 </header>
 
 <style>
-  /* Estilos Base do Header */
+  /* BASE */
   .main-header {
     display: flex;
     justify-content: space-between;
     align-items: center;
     padding: 1rem 1.5rem;
-    background-color: white;
+    background: white;
     border-bottom: 2px solid #fde2ed;
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
-    position: relative;
     z-index: 100;
   }
   .logo a {
@@ -82,99 +179,107 @@
     font-weight: bold;
   }
 
-  /* Navegação Desktop */
-  .nav-links {
+  /* DESKTOP NAV */
+  .nav-links-desktop {
     display: flex;
-    align-items: center;
     gap: 1.5rem;
+    align-items: center;
   }
-  .nav-links a:not(.btn) {
+  .nav-links-desktop a:not(.btn) {
     text-decoration: none;
     color: #333;
     font-weight: 500;
-    padding: 5px 0;
-    position: relative;
     transition: color 0.2s ease;
   }
-  .nav-links a:not(.btn):hover {
+  .nav-links-desktop a:not(.btn):hover {
     color: #ff69b4;
   }
 
-  /* Estilos Botões Base (Seu CSS global pode já ter isso) */
+  /* BUTTONS */
   .btn {
-    text-decoration: none;
     padding: 8px 16px;
     border-radius: 5px;
-    transition: background-color 0.3s, color 0.3s;
     font-weight: bold;
     border: 1px solid transparent;
-    cursor: pointer;
-    display: inline-block;
+    text-decoration: none;
   }
   .btn-primary {
-    background-color: #ff69b4;
+    background: #ff69b4;
     color: white;
     border-color: #ff69b4;
   }
   .btn-primary:hover {
-    background-color: #ff85c1;
-    border-color: #ff85c1;
+    background: #ff85c1;
   }
   .btn-secondary {
-    background-color: #6c757d;
+    background: #6c757d;
     color: white;
     border-color: #6c757d;
   }
   .btn-secondary:hover {
-    background-color: #5a6268;
-    border-color: #5a6268;
+    background: #5a6268;
   }
 
-  /* Estilos Carrinho (Desktop) */
+  /* CART STYLE (✅ Restaurado) */
   .cart-link {
     position: relative;
-    text-decoration: none;
-    color: #333;
     display: inline-flex;
     align-items: center;
     gap: 0.3rem;
+    color: #333;
+    text-decoration: none;
   }
   .cart-icon {
     font-size: 1.5rem;
-  }
-  .cart-text {
-    display: none;
   }
   .cart-badge {
     position: absolute;
     top: -5px;
     right: -12px;
-    background-color: red;
+    background: red;
     color: white;
     border-radius: 50%;
     padding: 2px 5px;
     font-size: 0.7rem;
     font-weight: bold;
     line-height: 1;
-    min-width: 8px;
+    min-width: 14px;
     text-align: center;
   }
+  .cart-badge-mobile {
+    background: red;
+    color: white;
+    border-radius: 50%;
+    padding: 2px 5px;
+    font-size: 0.75rem;
+    font-weight: bold;
+    line-height: 1;
+    margin-left: 0.4rem;
+  }
 
-  /* Estilos Hamburger (Escondido no Desktop) */
-  .hamburger-btn {
+  /* MOBILE */
+  .mobile-controls {
     display: none;
+    align-items: center;
+    gap: 0.5rem;
+  }
+  .hamburger-btn {
+    display: flex;
+    flex-direction: column; /* ✅ força as 3 linhas ficarem empilhadas */
+    justify-content: center;
+    align-items: center;
+    gap: 4px; /* espaçamento entre as linhas */
     background: none;
     border: none;
     cursor: pointer;
     padding: 10px;
-    z-index: 1001;
   }
+
   .hamburger-btn span {
-    display: block;
     width: 25px;
     height: 3px;
-    background-color: #333;
-    margin: 5px 0;
+    background: #333;
+    border-radius: 2px;
     transition: transform 0.3s ease, opacity 0.3s ease;
   }
   .hamburger-btn.is-active span:nth-child(1) {
@@ -186,6 +291,38 @@
   .hamburger-btn.is-active span:nth-child(3) {
     transform: translateY(-8px) rotate(-45deg);
   }
+
+  /* MENU MOBILE */
+  .nav-links-mobile {
+    position: fixed;
+    top: 0;
+    right: -100%;
+    width: 75%;
+    max-width: 320px;
+    height: 100vh;
+    background: #fff;
+    box-shadow: -3px 0 6px rgba(0, 0, 0, 0.1);
+    display: flex;
+    flex-direction: column;
+    padding-top: 5rem;
+    transition: right 0.4s ease;
+    z-index: 1000;
+  }
+  .nav-links-mobile.is-active {
+    right: 0;
+  }
+  .nav-links-mobile a {
+    padding: 1rem 2rem;
+    border-bottom: 1px solid #eee;
+    color: #444;
+    font-weight: 500;
+    text-decoration: none;
+  }
+  .nav-links-mobile a:not(.btn-mobile):hover {
+    background: #fce4ef;
+    color: #ff69b4;
+    padding-left: 2.5rem;
+  }
   .close-btn {
     display: none;
     position: absolute;
@@ -193,201 +330,47 @@
     right: 1.5rem;
     background: none;
     border: none;
-    font-size: 2.5rem;
-    color: #333;
+    font-size: 2rem;
     cursor: pointer;
-    padding: 0;
-    line-height: 1;
   }
 
-  /* Separador para o menu mobile (inicialmente escondido) */
-  .nav-separator {
-    display: none;
-  }
-
-  /* --- MEDIA QUERY PARA TELAS MENORES (< 769px) --- */
+  /* MOBILE MEDIA QUERY */
   @media (max-width: 768px) {
-    .main-header {
-      padding: 0.8rem 1rem;
-    }
-
-    /* Esconde a navegação desktop */
-    .nav-links:not(.is-active) {
+    .nav-links-desktop {
       display: none;
     }
-
-    /* Estilo do menu lateral quando ATIVO */
-    .nav-links.is-active {
-      display: flex;
-      position: fixed;
-      top: 0;
-      right: 0; /* Abre da DIREITA */
-      left: auto;
-      width: 75%;
-      max-width: 320px;
-      height: 100vh;
-      background-color: #fdfdfd;
-      box-shadow: -3px 0 6px rgba(0, 0, 0, 0.1);
-      flex-direction: column;
-      align-items: stretch;
-      justify-content: flex-start;
-      padding: 5rem 1rem 2rem 1rem; /* Zera padding lateral do container */
-      gap: 0;
-      transform: translateX(0%);
-      transition: transform 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
-      z-index: 1000;
-      overflow-y: auto;
-    }
-    /* Estado inicial escondido */
-    .nav-links {
-      transform: translateX(100%);
-      transition: transform 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
-      position: fixed;
-      top: 0;
-      right: 0;
-      width: 75%;
-      max-width: 320px;
-      height: 100vh;
-      background-color: #fdfdfd;
-      box-shadow: -3px 0 6px rgba(0, 0, 0, 0.1);
-      flex-direction: column;
-      align-items: stretch;
-      justify-content: flex-start;
-      padding: 5rem 0 2rem 0;
-      gap: 0;
-      z-index: 1000;
-      overflow-y: auto;
-      display: flex;
-    }
-
-    /* --- CORREÇÃO AQUI --- */
-    /* Estilo dos links no menu mobile */
-    .nav-links a {
-      /* Adiciona padding na esquerda e direita para afastar da borda */
-      padding: 1rem 2.5rem;
-      border-bottom: 1px solid #eee;
-      width: 100%;
-      box-sizing: border-box;
-      display: block;
-      font-size: 1.1rem; /* Fonte elegante */
-      font-weight: 500; /* Peso normal para links de navegação */
-      color: #444; /* Cor de texto suave */
-      letter-spacing: 0.5px; /* Espaçamento leve entre letras */
-    }
-    .nav-links a:last-of-type {
-      border-bottom: 1px solid #eee; /* Garante que o último item também tenha borda antes do separador */
-    }
-    .nav-links a:not(.btn-mobile):hover {
-      color: #ff69b4;
-      background-color: #fce4ef; /* Rosa claro no hover */
-      padding-left: 3rem; /* Efeito sutil de indentação no hover */
-      transition: padding-left 0.2s ease, background-color 0.2s ease,
-        color 0.2s ease;
-    }
-    /* --- FIM DA CORREÇÃO --- */
-
-    .hamburger-btn {
-      display: block;
-    } /* Mostra hamburger */
+    .mobile-controls,
+    .hamburger-btn,
     .close-btn {
-      display: block;
-    } /* Mostra botão fechar */
-
-    /* Estilo botões no menu mobile */
-    .nav-links .btn-mobile {
-      /* Renomeado para evitar conflito com .btn */
-      display: block;
-      width: calc(100% - 5rem); /* Largura total menos o padding (2.5rem * 2) */
-      margin: 1.5rem 2.5rem 0 2.5rem; /* Margem centralizada */
-      text-align: center;
-      padding-top: 12px;
-      padding-bottom: 12px;
-      font-size: 1.1rem;
-    }
-
-    /* Mostra o separador no mobile */
-    .nav-separator {
-      display: block;
-      border-top: 1px solid #ddd; /* Linha mais escura */
-      margin: 1rem 0;
-    }
-
-    /* --- AJUSTE CARRINHO NO MOBILE --- */
-    .nav-links .cart-link {
-      margin: 0;
-      border-bottom: 1px solid #eee;
       display: flex;
-      align-items: center;
-      gap: 0.5rem;
-      position: relative;
-    }
-    .nav-links .cart-icon {
-      display: none;
-    }
-    .nav-links .cart-text {
-      display: inline;
-      font-weight: 500;
-    }
-    .nav-links .cart-badge {
-      position: static;
-      margin-left: 0.5rem;
-      transform: translateY(-2px);
-      top: auto;
-      right: auto;
     }
   }
 </style>
 
-<script>
+<script defer>
   document.addEventListener("DOMContentLoaded", () => {
     const hamburgerBtn = document.getElementById("hamburger-btn");
-    const navMenu = document.getElementById("nav-menu");
+    const navMenu = document.getElementById("nav-menu-mobile");
     const closeBtn = document.getElementById("close-btn");
 
-    if (hamburgerBtn && navMenu) {
-      hamburgerBtn.addEventListener("click", () => {
-        const isActive = navMenu.classList.toggle("is-active");
-        hamburgerBtn.classList.toggle("is-active");
-        hamburgerBtn.setAttribute("aria-expanded", isActive);
-        navMenu.setAttribute("aria-hidden", !isActive);
-        document.body.style.overflow = isActive ? "hidden" : "";
-      });
+    function toggleMenu(open) {
+      const isOpen = open ?? !navMenu.classList.contains("is-active");
+      navMenu.classList.toggle("is-active", isOpen);
+      hamburgerBtn.classList.toggle("is-active", isOpen);
+      hamburgerBtn.setAttribute("aria-expanded", isOpen);
+      navMenu.setAttribute("aria-hidden", !isOpen);
+      document.body.style.overflow = isOpen ? "hidden" : "";
     }
 
-    if (closeBtn && navMenu) {
-      closeBtn.addEventListener("click", () => {
-        navMenu.classList.remove("is-active");
-        hamburgerBtn.classList.remove("is-active");
-        hamburgerBtn.setAttribute("aria-expanded", "false");
-        navMenu.setAttribute("aria-hidden", "true");
-        document.body.style.overflow = "";
-      });
-    }
+    hamburgerBtn.addEventListener("click", () => toggleMenu());
+    closeBtn.addEventListener("click", () => toggleMenu(false));
 
-    const navLinks = navMenu.querySelectorAll("a");
-    navLinks.forEach((link) => {
-      link.addEventListener("click", () => {
-        if (
-          window.innerWidth <= 768 &&
-          navMenu.classList.contains("is-active")
-        ) {
-          navMenu.classList.remove("is-active");
-          hamburgerBtn.classList.remove("is-active");
-          hamburgerBtn.setAttribute("aria-expanded", "false");
-          navMenu.setAttribute("aria-hidden", "true");
-          document.body.style.overflow = "";
-        }
-      });
+    navMenu.querySelectorAll("a").forEach((link) => {
+      link.addEventListener("click", () => toggleMenu(false));
     });
 
     window.addEventListener("resize", () => {
-      if (window.innerWidth > 768 && navMenu.classList.contains("is-active")) {
-        navMenu.classList.remove("is-active");
-        hamburgerBtn.classList.remove("is-active");
-        hamburgerBtn.setAttribute("aria-expanded", "false");
-        navMenu.setAttribute("aria-hidden", "true");
-        document.body.style.overflow = "";
-      }
+      if (window.innerWidth > 768) toggleMenu(false);
     });
   });
 </script>
