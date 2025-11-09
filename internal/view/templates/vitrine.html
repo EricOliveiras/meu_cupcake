@@ -8,119 +8,70 @@
     <link rel="icon" type="image/png" href="/static/images/favicon.png" />
 
     <style>
-        /* 2. CONTAINER AJUSTADO */
         .container {
-            max-width: 1200px; /* Vitrine pode ser mais larga */
+            max-width: 1200px;
             margin: 2rem auto;
-            padding: 0 1rem; /* Padding lateral para mobile */
+            padding: 0 1rem;
             box-sizing: border-box;
         }
 
         /* --- ESTILOS DA VITRINE --- */
-        .vitrine-container {
-            display: flex; flex-wrap: wrap; gap: 2rem; justify-content: center;
-        }
+        .vitrine-container { display: flex; flex-wrap: wrap; gap: 2rem; justify-content: center; }
         .cupcake-card {
             background-color: white; border-radius: 8px; box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08);
             width: 300px; overflow: hidden; display: flex; flex-direction: column;
             cursor: pointer; transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
         }
-        .cupcake-card:hover {
-            transform: translateY(-5px); box-shadow: 0 8px 20px rgba(0, 0, 0, 0.12);
-        }
+        .cupcake-card:hover { transform: translateY(-5px); box-shadow: 0 8px 20px rgba(0, 0, 0, 0.12); }
         .cupcake-card img { width: 100%; height: 200px; object-fit: cover; }
         .card-content { padding: 1.5rem; flex-grow: 1; display: flex; flex-direction: column; text-align: left; }
         .card-content h3 { margin: 0 0 0.5rem 0; color: #333; }
         .card-content p {
             font-size: 0.9rem; color: #666; flex-grow: 1; margin: 0;
             overflow: hidden; text-overflow: ellipsis; display: -webkit-box;
+            -webkit-line-clamp: 3; -webkit-box-orient: vertical;
         }
-        .card-footer {
-            display: flex; justify-content: space-between; align-items: center;
-            padding: 1.5rem; padding-top: 1rem;
-        }
+        .card-footer { display: flex; justify-content: space-between; align-items: center; padding: 1.5rem; padding-top: 1rem; }
         .price { font-size: 1.2rem; font-weight: bold; color: #ff69b4; }
 
         /* --- ESTILO PARA O BOTÃO/FORM --- */
         .add-to-cart-form button {
             background-color: #ff69b4; color: white; border: none;
             padding: 10px 20px; border-radius: 5px; cursor: pointer; font-weight: bold;
+            transition: background-color 0.2s ease;
         }
         .add-to-cart-form button:hover { background-color: #ff85c1; }
+        .add-to-cart-form button:disabled { background-color: #ccc; cursor: not-allowed; }
+        .add-to-cart-form button.success { background-color: #28a745; } /* Verde sucesso */
 
         /* --- ESTILOS DO MODAL --- */
-        .modal-overlay {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background-color: rgba(0, 0, 0, 0.7);
-            display: none; justify-content: center; align-items: center; z-index: 1000;
-        }
-        .modal-content {
-            background-color: white; border-radius: 8px; padding: 2rem;
-            width: 90%; max-width: 600px; position: relative;
-            display: flex; gap: 1.5rem;
-            box-sizing: border-box; /* Garante padding correto */
-        }
-        .modal-img { width: 250px; height: 250px; object-fit: cover; border-radius: 8px; flex-shrink: 0; /* Impede imagem de encolher */ }
+        .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0, 0, 0, 0.7); display: none; justify-content: center; align-items: center; z-index: 1000; }
+        .modal-content { background-color: white; border-radius: 8px; padding: 2rem; width: 90%; max-width: 600px; position: relative; display: flex; gap: 1.5rem; box-sizing: border-box; }
+        .modal-img { width: 250px; height: 250px; object-fit: cover; border-radius: 8px; flex-shrink: 0; }
         .modal-info { display: flex; flex-direction: column; flex-grow: 1; }
         .modal-info h2 { margin-top: 0; color: #ff69b4; }
-        .modal-info p { color: #555; line-height: 1.6; flex-grow: 1; overflow-y: auto; /* Permite rolagem se descrição for longa */ }
-        .modal-info .card-footer { padding: 1rem 0 0 0; } /* Ajusta padding no footer do modal */
-        .close-btn {
-            position: absolute; top: 10px; right: 20px;
-            font-size: 2.5rem; color: #aaa; cursor: pointer;
-            border: none; background: none;
-        }
+        .modal-info p { color: #555; line-height: 1.6; flex-grow: 1; overflow-y: auto; }
+        .modal-info .card-footer { padding: 1rem 0 0 0; }
+        .close-btn { position: absolute; top: 10px; right: 20px; font-size: 2.5rem; color: #aaa; cursor: pointer; border: none; background: none; }
         .close-btn:hover { color: #333; }
-        .modal-info .price {
-            font-size: 1.5rem; margin-right: 1rem;
-        }
+        .modal-info .price { font-size: 1.5rem; margin-right: 1rem; }
 
-        /* --- ESTILOS FLASH MESSAGES --- */
+        /* --- ESTILOS FLASH MESSAGES (para erros do handler ShowVitrinePage) --- */
         .flash-messages { padding: 0; margin-bottom: 1.5rem; }
         .flash { padding: 1rem; margin-bottom: 1rem; border-radius: 5px; border: 1px solid transparent; text-align: center; font-weight: bold; }
         .flash-success { color: #155724; background-color: #d4edda; border-color: #c3e6cb; }
-        /* 3. ADICIONADO .flash-error PARA CONSISTÊNCIA */
         .flash-error { color: #721c24; background-color: #f8d7da; border-color: #f5c6cb; }
 
-        /* --- 4. MEDIA QUERY PARA RESPONSIVIDADE --- */
+        /* --- MEDIA QUERY PARA RESPONSIVIDADE --- */
         @media (max-width: 768px) {
-            .container {
-                margin: 1rem auto;
-                padding: 0 0.5rem; /* Menor padding no container */
-            }
-            h1 {
-                font-size: 1.8rem;
-                margin: 1.5rem 0;
-            }
-            .vitrine-container {
-                gap: 1rem; /* Menor espaçamento */
-            }
-            .cupcake-card {
-                width: 100%; /* Card ocupa largura total */
-                max-width: 350px; /* Limite máximo */
-                margin: 0 auto; /* Centraliza o card */
-            }
-
-            /* Responsividade do Modal */
-            .modal-content {
-                flex-direction: column; /* Empilha imagem e info */
-                padding: 1.5rem;
-                width: 95%; /* Ocupa mais tela */
-                gap: 1rem;
-                max-height: 90vh; /* Garante que modal caiba na altura */
-                overflow-y: auto; /* Permite rolagem no modal se necessário */
-            }
-            .modal-img {
-                padding-top: 10px;
-                width: 100%; /* Imagem ocupa 100% da largura do modal */
-                height: 200px; /* Altura fixa para a imagem */
-            }
-            .modal-info {
-                text-align: center;
-            }
-            .modal-info .card-footer {
-                justify-content: space-around;
-            }
+            .container { margin: 1rem auto; padding: 0 0.5rem; }
+            h1 { font-size: 1.8rem; margin: 1.5rem 0; }
+            .vitrine-container { gap: 1rem; }
+            .cupcake-card { width: 100%; max-width: 350px; margin: 0 auto; }
+            .modal-content { flex-direction: column; padding: 1.5rem; width: 95%; gap: 1rem; max-height: 90vh; overflow-y: auto; }
+            .modal-img { padding-top: 10px; width: 100%; height: 200px; }
+            .modal-info { text-align: center; }
+            .modal-info .card-footer { justify-content: space-around; }
             .close-btn { top: 5px; right: 10px; font-size: 2rem; }
         }
     </style>
@@ -147,7 +98,7 @@
         <h1>Nossa Vitrine de Delícias</h1>
         <div class="vitrine-container">
             {{ range .Cupcakes }}
-             <div class="cupcake-card"
+            <div class="cupcake-card"
                  data-id="{{ .ID }}" 
                  data-name="{{ .Nome }}"
                  data-description="{{ .Descricao }}"
@@ -191,6 +142,7 @@
 
     <script>
         document.addEventListener('DOMContentLoaded', () => {
+            // --- Lógica do Modal ---
             const modalOverlay = document.getElementById('cupcakeModal');
             const closeModalBtn = document.getElementById('closeModalBtn');
             const clickableCards = document.querySelectorAll('.cupcake-card');
@@ -198,32 +150,101 @@
             const modalName = document.getElementById('modalName');
             const modalDescription = document.getElementById('modalDescription');
             const modalPrice = document.getElementById('modalPrice');
-            const modalCartForm = modalOverlay.querySelector('.add-to-cart-form');
+            const modalCartForm = modalOverlay ? modalOverlay.querySelector('.add-to-cart-form') : null; 
 
-            const closeModal = () => { modalOverlay.style.display = 'none'; };
+            const closeModal = () => { if (modalOverlay) modalOverlay.style.display = 'none'; };
 
-            clickableCards.forEach(card => {
-                card.addEventListener('click', (event) => {
-                    if (event.target.closest('.add-to-cart-form')) { return; } 
+            if (clickableCards && modalOverlay && modalCartForm) {
+                clickableCards.forEach(card => {
+                    card.addEventListener('click', (event) => {
+                        if (event.target.closest('.add-to-cart-form')) { return; } 
 
-                    const cupcakeId = card.dataset.id; 
-                    if (!cupcakeId) {
-                        console.error("Erro: Atributo data-id não encontrado no card.");
-                        return;
+                        const cupcakeId = card.dataset.id; 
+                        if (!cupcakeId) { console.error("Erro: data-id não encontrado."); return; }
+
+                        modalImage.src = card.dataset.image;
+                        modalName.textContent = card.dataset.name;
+                        modalDescription.textContent = card.dataset.description;
+                        modalPrice.textContent = `R$ ${card.dataset.price}`;
+                        modalCartForm.action = `/carrinho/adicionar/${cupcakeId}`;
+
+                        modalOverlay.style.display = 'flex';
+                    });
+                });
+            } else {
+                 console.error("Elementos essenciais do modal não encontrados. Modal não funcionará.");
+            }
+
+            if (closeModalBtn) closeModalBtn.addEventListener('click', closeModal);
+            if (modalOverlay) modalOverlay.addEventListener('click', (event) => { if (event.target === modalOverlay) closeModal(); });
+            
+            
+           const allCartForms = document.querySelectorAll('.add-to-cart-form');
+            
+            const updateCartBadge = (count) => {
+                const badges = document.querySelectorAll('.cart-badge, .cart-badge-mobile');
+                
+                badges.forEach(badge => {
+                    if (badge) {
+                        if (count > 0) {
+                            badge.textContent = count;
+                            badge.style.display = 'inline-block'; 
+                            badge.style.opacity = '1';
+                            badge.style.transform = 'scale(1)';
+                        } else {
+                            badge.style.display = 'none'; 
+                        }
                     }
+                });
+            };
 
-                    modalImage.src = card.dataset.image;
-                    modalName.textContent = card.dataset.name;
-                    modalDescription.textContent = card.dataset.description;
-                    modalPrice.textContent = `R$ ${card.dataset.price}`;
-                    modalCartForm.action = `/carrinho/adicionar/${cupcakeId}`;
+            allCartForms.forEach(form => {
+                form.addEventListener('submit', (e) => {
+                    e.preventDefault(); 
+                    
+                    const url = form.action;
+                    const button = form.querySelector('button[type="submit"]');
+                    if (!button) return;
+                    const originalButtonText = button.textContent;
+                    
+                    button.disabled = true;
+                    button.textContent = 'Adicionando...';
 
-                    modalOverlay.style.display = 'flex';
+                    fetch(url, { method: 'POST', headers: { 'X-Requested-With': 'XMLHttpRequest' } })
+                    .then(response => {
+                        if (!response.ok) { return response.json().then(errData => Promise.reject(errData)); }
+                        return response.json();
+                    })
+                    .then(data => {
+                        if (data.success) {
+                            updateCartBadge(data.newCartCount);
+                            
+                            if (modalOverlay.style.display === 'flex') {
+                                closeModal();
+                            }
+                            
+                            button.textContent = 'Adicionado!';
+                            button.classList.add('success'); 
+                            setTimeout(() => {
+                                button.textContent = originalButtonText;
+                                button.disabled = false;
+                                button.classList.remove('success'); 
+                            }, 1500);
+                            
+                        } else {
+                            alert("Erro: " + (data.error || "Não foi possível adicionar o item."));
+                            button.textContent = originalButtonText;
+                            button.disabled = false;
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Erro no fetch ao adicionar ao carrinho:', error);
+                        alert("Erro de conexão. Tente novamente.");
+                        button.textContent = originalButtonText;
+                        button.disabled = false;
+                    });
                 });
             });
-
-            closeModalBtn.addEventListener('click', closeModal);
-            modalOverlay.addEventListener('click', (event) => { if (event.target === modalOverlay) closeModal(); });
         });
     </script>
 </body>
