@@ -81,9 +81,9 @@ A aplicação está hospedada e pode ser acessada através do seguinte link:
 **Formato do Feedback (Conforme Projeto Integrador):**
 Ao preencher o formulário, por favor, detalhe:
 
-- [cite_start]O que você testou e funcionou bem[cite: 514].
-- [cite_start]O que você testou e não funcionou (descreva o problema e, se possível, os passos para reproduzi-lo)[cite: 515].
-- [cite_start]Quaisquer funcionalidades que você esperava e não encontrou, ou sugestões de melhoria[cite: 516].
+- O que você testou e funcionou bem.
+- O que você testou e não funcionou (descreva o problema e, se possível, os passos para reproduzi-lo).
+- Quaisquer funcionalidades que você esperava e não encontrou, ou sugestões de melhoria.
 
 Muito obrigado pela sua colaboração!
 
